@@ -44,7 +44,7 @@ const CORS_PROXIES = [
     { label: 'thingproxy.freeboard.io', url: 'https://thingproxy.freeboard.io/fetch/' },
     { label: 'corsproxy.io', url: 'https://corsproxy.io/?' },
     { label: 'api.allorigins.win', url: 'https://api.allorigins.win/raw?url=' },
-    { label: 'Local cors-anywhere', url: `http://${LOCAL_IP}:8080/` },
+    { label: 'Local proxy (npm run cors-proxy)', url: `http://${LOCAL_IP}:8080/` },
     { label: 'Custom', url: '' },
   ];
   const defaultProxy = import.meta.env.MODE === 'home'
