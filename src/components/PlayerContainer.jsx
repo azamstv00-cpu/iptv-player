@@ -47,7 +47,7 @@ export default function PlayerContainer({ source, onError, onLoadSuccess, onLoad
         <div className={`video-info ${controlsHidden ? 'hidden' : ''}`}>
           <div className="label"><span className="live-dot"></span> LIVE</div>
           <h1>{nowPlaying || channelName}</h1>
-          <div className="meta">{channelCategory ? `${channelCategory}` : ''}{fullscreen && activeTrack && activeTrack.width ? ` · ${activeTrack.width}x${activeTrack.height}` : ''}</div>
+          <div className="meta">{channelCategory ? `${channelCategory}` : ''}{activeTrack && activeTrack.width ? ` · ${activeTrack.width}x${activeTrack.height}` : ''}</div>
         </div>
       )}
 

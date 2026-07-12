@@ -1,5 +1,4 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import shaka from 'shaka-player';
 
 export function useShakaPlayer(videoRef) {
   const playerRef = useRef(null);
@@ -9,96 +8,107 @@ export function useShakaPlayer(videoRef) {
   const [bufferedPercent, setBufferedPercent] = useState(0);
   const bufTimer = useRef(null);
 
-  useEffect(() => {
-    shaka.polyfill.installAll();
-
-    if (!shaka.Player.isBrowserSupported()) {
-      console.error('Browser not supported');
-      return;
+  const updateBufPct = useCallback(() => {
+    const v = videoRef.current;
+    if (!v || !v.buffered.length) return;
+    const end = v.buffered.end(v.buffered.length - 1);
+    const dur = v.duration;
+    if (isFinite(dur) && dur > 0) {
+      setBufferedPercent(Math.min(100, Math.round((end / dur) * 100)));
+    } else {
+      const ahead = Math.round(end - v.currentTime);
+      setBufferedPercent(Math.min(99, ahead));
     }
+  }, []);
 
-    const player = new shaka.Player();
-    playerRef.current = player;
+  const startBufPoll = useCallback(() => {
+    updateBufPct();
+    clearInterval(bufTimer.current);
+    bufTimer.current = setInterval(updateBufPct, 500);
+  }, [updateBufPct]);
 
-    player.configure({
-      streaming: {
-        bufferingGoal: 30,
-        rebufferingGoal: 10,
-        bufferBehind: 60,
-        segmentPrefetchLimit: 3,
-        startAtSegmentBoundary: true,
-      },
-      abr: {
-        enabled: true,
-        switchInterval: 5,
-        bandwidthUpgradeTarget: 0.85,
-        bandwidthDowngradeTarget: 0.95,
-        defaultBandwidthEstimate: 2000000,
-      },
+  const stopBufPoll = useCallback(() => {
+    clearInterval(bufTimer.current);
+    setBufferedPercent(0);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    import('shaka-player').then(shaka => {
+      if (cancelled) return;
+      shaka.polyfill.installAll();
+      if (!shaka.Player.isBrowserSupported()) return;
+
+      const player = new shaka.Player();
+      playerRef.current = player;
+
+      player.configure({
+        streaming: {
+          bufferingGoal: 30,
+          rebufferingGoal: 10,
+          bufferBehind: 60,
+          segmentPrefetchLimit: 3,
+          startAtSegmentBoundary: true,
+        },
+        abr: {
+          enabled: true,
+          switchInterval: 5,
+          bandwidthUpgradeTarget: 0.85,
+          bandwidthDowngradeTarget: 0.95,
+          defaultBandwidthEstimate: 2000000,
+        },
+      });
+
+      const onTracksChanged = () => {
+        const variantTracks = player.getVariantTracks().filter(t => t.type === 'variant');
+        const unique = [];
+        const seen = new Set();
+        for (const t of variantTracks) {
+          const key = `${t.width}x${t.height}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            unique.push(t);
+          }
+        }
+        unique.sort((a, b) => (b.width || 0) - (a.width || 0));
+        setTracks(unique);
+        const active = player.getActiveVariantTrack();
+        if (active) setActiveTrack(active);
+      };
+
+      const onVariantChanged = () => {
+        const active = player.getActiveVariantTrack();
+        if (active) setActiveTrack(active);
+      };
+
+      const onBuffering = (e) => {
+        setIsBuffering(e.buffering);
+        if (e.buffering) startBufPoll();
+      };
+
+      const onError = (e) => {
+        console.error('Shaka error event:', e.detail);
+        stopBufPoll();
+        setIsBuffering(false);
+      };
+
+      const onLoad = () => startBufPoll();
+
+      player.addEventListener('trackschanged', onTracksChanged);
+      player.addEventListener('variantchanged', onVariantChanged);
+      player.addEventListener('buffering', onBuffering);
+      player.addEventListener('error', onError);
+      player.addEventListener('loaded', onLoad);
     });
 
-    const updateBufPct = () => {
-      const v = videoRef.current;
-      if (!v || !v.duration || !v.buffered.length) { setBufferedPercent(0); return; }
-      setBufferedPercent(Math.round((v.buffered.end(v.buffered.length - 1) / v.duration) * 100));
-    };
-
-    const startBufPoll = () => {
-      updateBufPct();
-      clearInterval(bufTimer.current);
-      bufTimer.current = setInterval(updateBufPct, 500);
-    };
-    const stopBufPoll = () => {
-      clearInterval(bufTimer.current);
-      setBufferedPercent(0);
-    };
-
-    const onTracksChanged = () => {
-      const variantTracks = player.getVariantTracks().filter(t => t.type === 'variant');
-      const unique = [];
-      const seen = new Set();
-      for (const t of variantTracks) {
-        const key = `${t.width}x${t.height}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          unique.push(t);
-        }
-      }
-      unique.sort((a, b) => (b.width || 0) - (a.width || 0));
-      setTracks(unique);
-      const active = player.getActiveVariantTrack();
-      if (active) setActiveTrack(active);
-    };
-
-    const onVariantChanged = () => {
-      const active = player.getActiveVariantTrack();
-      if (active) setActiveTrack(active);
-    };
-
-    const onBuffering = (e) => {
-      setIsBuffering(e.buffering);
-      if (e.buffering) startBufPoll(); else stopBufPoll();
-    };
-
-    const onError = (e) => {
-      console.error('Shaka error event:', e.detail);
-      stopBufPoll();
-      setIsBuffering(false);
-    };
-
-    player.addEventListener('trackschanged', onTracksChanged);
-    player.addEventListener('variantchanged', onVariantChanged);
-    player.addEventListener('buffering', onBuffering);
-    player.addEventListener('error', onError);
-
     return () => {
-      player.removeEventListener('trackschanged', onTracksChanged);
-      player.removeEventListener('variantchanged', onVariantChanged);
-      player.removeEventListener('buffering', onBuffering);
-      player.removeEventListener('error', onError);
-      clearInterval(bufTimer.current);
-      player.destroy();
-      playerRef.current = null;
+      cancelled = true;
+      stopBufPoll();
+      if (playerRef.current) {
+        playerRef.current.destroy();
+        playerRef.current = null;
+      }
     };
   }, []);
 
@@ -107,6 +117,7 @@ export function useShakaPlayer(videoRef) {
     if (!player) return;
 
     try {
+      stopBufPoll();
       await player.unload();
       setTracks([]);
       setActiveTrack(null);
@@ -129,7 +140,7 @@ export function useShakaPlayer(videoRef) {
       console.error('Shaka error:', err);
       throw err;
     }
-  }, []);
+  }, [stopBufPoll]);
 
   const selectTrack = useCallback((track) => {
     const player = playerRef.current;
