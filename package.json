@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "home": "vite --mode home",
-    "cors-proxy": "node cors-proxy.mjs",
+"home": "concurrently -n proxy,vite \"node cors-proxy.mjs\" \"vite --mode home\"",
+"cors-proxy": "node cors-proxy.mjs",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview"
@@ -23,6 +23,7 @@
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "@vitejs/plugin-react": "^6.0.3",
     "agentation": "^3.0.2",
+    "concurrently": "^10.0.3",
     "oxlint": "^1.71.0",
     "vite": "^8.1.1"
   }
