@@ -8,18 +8,21 @@ import { parseInput } from './services/linkParser';
 import { reindexChannels } from './services/channels';
 import { onAuth, logout } from './services/auth';
 
+const CORS_PROXIES = [
+  { label: 'corsproxy.io', url: 'https://corsproxy.io/?' },
+  { label: 'thingproxy.freeboard.io', url: 'https://thingproxy.freeboard.io/fetch/' },
+  { label: 'api.codetabs.com', url: 'https://api.codetabs.com/v1/proxy?quest=' },
+  { label: 'api.allorigins.win', url: 'https://api.allorigins.win/raw?url=' },
+  { label: 'Custom...', url: '__custom__' },
+  // { label: 'Deploy your own (Cloudflare Worker)', url: '__deploy__' },
+];
+
 function formatShakaError(err) {
   const CATEGORIES = { 1: 'Network', 2: 'Manifest', 3: 'Media', 4: 'Streaming', 5: 'DRM', 6: 'Player' };
   const cat = CATEGORIES[err.category] || 'Unknown';
   const detail = err.data?.length ? err.data.map(d => String(d).slice(0, 120)).join(' | ') : err.message;
   return `[${cat} ${err.code}] ${detail}`;
 }
-
-const AgentationLazy = import.meta.env.MODE === 'development'
-  ? lazy(() => import('agentation').then(m => ({ default: m.Agentation })))
-  : () => null;
-
-const LOCAL_IP = '192.168.0.136';
 
 function App() {
   const [source, setSource] = useState(null);
@@ -32,6 +35,11 @@ function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [clock, setClock] = useState('');
+const AgentationLazy = import.meta.env.MODE === 'development'
+  ? lazy(() => import('agentation').then(m => ({ default: m.Agentation })))
+  : () => null;
+
+const LOCAL_IP = '192.168.0.136';
 const CORS_PROXIES = [
     { label: 'thingproxy.freeboard.io', url: 'https://thingproxy.freeboard.io/fetch/' },
     { label: 'corsproxy.io', url: 'https://corsproxy.io/?' },
@@ -197,7 +205,7 @@ const CORS_PROXIES = [
                   ))}
                 </select>
               )}
-              {useCorsProxy && corsProxyUrl === '' && (
+              {useCorsProxy && corsProxyUrl === '__custom__' && (
                 <input className="cors-proxy-input" type="text" placeholder="Custom proxy URL..." onChange={e => { setCorsProxyUrl(e.target.value); setError(null); }} />
               )}
               <button className="btn-load-stream" onClick={(e) => {
