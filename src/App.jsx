@@ -1,6 +1,5 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react';
 import './App.css';
-import { Agentation } from 'agentation';
 import ChannelList from './components/ChannelList';
 import PlayerContainer from './components/PlayerContainer';
 import LoginModal from './components/LoginModal';
@@ -36,7 +35,11 @@ function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [clock, setClock] = useState('');
-  const CORS_PROXIES = [
+const AgentationLazy = import.meta.env.DEV
+  ? lazy(() => import('agentation').then(m => ({ default: m.Agentation })))
+  : () => null;
+
+const CORS_PROXIES = [
     { label: 'thingproxy.freeboard.io', url: 'https://thingproxy.freeboard.io/fetch/' },
     { label: 'corsproxy.io', url: 'https://corsproxy.io/?' },
     { label: 'api.allorigins.win', url: 'https://api.allorigins.win/raw?url=' },
@@ -239,7 +242,7 @@ function App() {
           </button>
         )}
       </aside>
-      <Agentation />
+      {import.meta.env.DEV && <Suspense fallback={null}><AgentationLazy /></Suspense>}
     </div>
   );
 }
