@@ -35,7 +35,7 @@ function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [clock, setClock] = useState('');
-const AgentationLazy = import.meta.env.DEV
+const AgentationLazy = import.meta.env.MODE === 'development'
   ? lazy(() => import('agentation').then(m => ({ default: m.Agentation })))
   : () => null;
 
@@ -242,7 +242,7 @@ const CORS_PROXIES = [
           </button>
         )}
       </aside>
-      {import.meta.env.DEV && <Suspense fallback={null}><AgentationLazy /></Suspense>}
+      {import.meta.env.MODE === 'development' && <Suspense fallback={null}><AgentationLazy /></Suspense>}
     </div>
   );
 }
