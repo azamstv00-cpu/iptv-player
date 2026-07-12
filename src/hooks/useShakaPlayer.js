@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 
 export function useShakaPlayer(videoRef) {
   const playerRef = useRef(null);
+  const readyRef = useRef(null);
   const [tracks, setTracks] = useState([]);
   const [activeTrack, setActiveTrack] = useState(null);
   const [isBuffering, setIsBuffering] = useState(false);
@@ -34,11 +35,14 @@ export function useShakaPlayer(videoRef) {
 
   useEffect(() => {
     let cancelled = false;
+    let resolveReady;
+
+    readyRef.current = new Promise(resolve => { resolveReady = resolve; });
 
     import('shaka-player').then(shaka => {
-      if (cancelled) return;
+      if (cancelled) { resolveReady(); return; }
       shaka.polyfill.installAll();
-      if (!shaka.Player.isBrowserSupported()) return;
+      if (!shaka.Player.isBrowserSupported()) { resolveReady(); return; }
 
       const player = new shaka.Player();
       playerRef.current = player;
@@ -112,6 +116,8 @@ export function useShakaPlayer(videoRef) {
       player.addEventListener('buffering', onBuffering);
       player.addEventListener('error', onError);
       player.addEventListener('loaded', onLoad);
+
+      return player.attach(videoRef.current).then(resolveReady);
     });
 
     return () => {
@@ -125,6 +131,7 @@ export function useShakaPlayer(videoRef) {
   }, []);
 
   const load = useCallback(async (source) => {
+    await readyRef.current;
     const player = playerRef.current;
     if (!player) return;
 
@@ -146,7 +153,6 @@ export function useShakaPlayer(videoRef) {
         });
       }
 
-      await player.attach(videoRef.current);
       await player.load(source.url);
     } catch (err) {
       console.error('Shaka error:', err);
