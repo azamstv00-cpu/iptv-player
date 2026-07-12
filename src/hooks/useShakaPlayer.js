@@ -45,18 +45,30 @@ export function useShakaPlayer(videoRef) {
 
       player.configure({
         streaming: {
-          bufferingGoal: 30,
-          rebufferingGoal: 10,
-          bufferBehind: 60,
-          segmentPrefetchLimit: 3,
+          bufferingGoal: 60,
+          rebufferingGoal: 15,
+          bufferBehind: 120,
+          segmentPrefetchLimit: 5,
           startAtSegmentBoundary: true,
+          retryParameters: {
+            maxAttempts: 4,
+            baseDelay: 1000,
+            backoffFactor: 2,
+            fuzzFactor: 0.5,
+            timeout: 30000,
+          },
         },
         abr: {
           enabled: true,
-          switchInterval: 5,
-          bandwidthUpgradeTarget: 0.85,
-          bandwidthDowngradeTarget: 0.95,
-          defaultBandwidthEstimate: 2000000,
+          switchInterval: 3,
+          bandwidthUpgradeTarget: 0.7,
+          bandwidthDowngradeTarget: 0.9,
+          defaultBandwidthEstimate: 8000000,
+        },
+        manifest: {
+          dash: {
+            defaultPresentationDelay: 8,
+          },
         },
       });
 
