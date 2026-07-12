@@ -1,0 +1,1179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>IPTV Player</title>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --glass: rgba(26, 26, 36, 0.55);
+  --glass-blur: 16px;
+  --glass-elevated: rgba(16, 16, 24, 0.75);
+  --glass-elevated-blur: 20px;
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --text-primary: #e0e0e8;
+  --text-muted: #8888a0;
+  --accent: #5b7cfa;
+  --accent-glass: rgba(91, 124, 250, 0.15);
+  --accent-border: rgba(91, 124, 250, 0.3);
+  --error: #f05a5a;
+  --error-glass: rgba(240, 90, 90, 0.12);
+  --success: #4ade80;
+  --sidebar-width: 280px;
+  --gap: 16px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: var(--bg);
+  color: var(--text-primary);
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== Glass mixin ===== */
+.glass {
+  background: var(--glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+}
+.glass-elevated {
+  background: var(--glass-elevated);
+  backdrop-filter: blur(var(--glass-elevated-blur));
+  -webkit-backdrop-filter: blur(var(--glass-elevated-blur));
+  border: 1px solid var(--glass-border);
+}
+
+/* ===== App layout ===== */
+.app {
+  display: flex;
+  width: 100%; height: 100vh;
+  padding: var(--gap);
+  gap: var(--gap);
+}
+
+/* ===== Sidebar ===== */
+.sidebar {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px;
+  gap: 8px;
+  overflow: hidden;
+}
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 8px;
+}
+.sidebar-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.btn-glass {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  letter-spacing: 0.01em;
+}
+.btn-glass:hover { background: rgba(255, 255, 255, 0.12); }
+.btn-glass-accent {
+  background: rgba(91, 124, 250, 0.2);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  letter-spacing: 0.01em;
+}
+.btn-glass-accent:hover { background: rgba(91, 124, 250, 0.3); }
+
+.channel-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 -4px;
+  padding: 0 4px;
+}
+.channel-list::-webkit-scrollbar { width: 4px; }
+.channel-list::-webkit-scrollbar-track { background: transparent; }
+.channel-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+.channel-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s;
+  border: 1px solid transparent;
+}
+.channel-item:hover { background: rgba(255, 255, 255, 0.04); }
+.channel-item.active {
+  background: var(--accent-glass);
+  border-color: var(--accent-border);
+}
+.channel-item.offline { opacity: 0.5; }
+
+.channel-number {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-muted);
+  width: 24px;
+  text-align: right;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.channel-item.active .channel-number { color: var(--accent); }
+
+.channel-info {
+  flex: 1;
+  min-width: 0;
+}
+.channel-name {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.channel-item.active .channel-name { color: var(--accent); }
+.channel-category {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+.channel-status {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.channel-status.online { background: var(--success); }
+.channel-status.offline { background: var(--error); }
+
+.channel-now-playing {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
+}
+
+.btn-add-channel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(91, 124, 250, 0.15);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  letter-spacing: 0.01em;
+  margin-top: 4px;
+}
+.btn-add-channel:hover { background: rgba(91, 124, 250, 0.25); }
+
+/* ===== Player area ===== */
+.player {
+  flex: 1;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  position: relative;
+  background: radial-gradient(ellipse at 60% 50%, #14141f 0%, #0a0a0f 70%);
+}
+.player-bg {
+  position: absolute;
+  inset: -50%;
+  background:
+    radial-gradient(ellipse at 40% 60%, rgba(91, 124, 250, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 30%, rgba(91, 124, 250, 0.02) 0%, transparent 50%);
+  animation: bgShift 8s ease-in-out infinite alternate;
+}
+@keyframes bgShift {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-2%, -1%) scale(1.05); }
+}
+
+.video-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 40px 32px 24px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.7));
+  z-index: 2;
+}
+.video-info .label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--error);
+  display: inline-block;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.video-info h1 {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.video-info .meta {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ===== Controls overlay ===== */
+.controls-overlay {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  transition: opacity 0.3s;
+}
+.controls-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.controls-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 6px;
+  border-radius: var(--radius-xl);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  width: 56px;
+}
+
+.btn-control {
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-control:hover { background: rgba(255, 255, 255, 0.1); }
+.btn-control:active { background: rgba(255, 255, 255, 0.15); }
+.btn-control svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+.btn-control .icon-num {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.volume-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0;
+}
+
+.volume-track {
+  width: 4px;
+  height: 72px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+  position: relative;
+  cursor: pointer;
+}
+.volume-fill {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: height 0.1s;
+}
+.volume-thumb {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  left: 50%;
+  transform: translate(-50%, 50%);
+  bottom: var(--vol-pct, 75%);
+  box-shadow: 0 0 6px rgba(0,0,0,0.4);
+  pointer-events: none;
+}
+
+/* ===== Resolution picker ===== */
+.resolution-picker {
+  position: absolute;
+  right: 90px;
+  bottom: 100px;
+  z-index: 20;
+  min-width: 180px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: rgba(16, 16, 24, 0.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.resolution-picker.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.resolution-picker h3 {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+.resolution-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.15s;
+}
+.resolution-option:hover { background: rgba(255, 255, 255, 0.06); }
+.resolution-option.active { color: var(--accent); }
+.resolution-option .check {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--glass-border);
+  display: grid;
+  place-items: center;
+  transition: all 0.15s;
+}
+.resolution-option.active .check {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.resolution-option .check svg {
+  fill: white;
+  width: 10px;
+  height: 10px;
+}
+
+/* ===== Modal ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.6);
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+}
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.modal {
+  width: 380px;
+  max-width: 90vw;
+  padding: 32px 28px 28px;
+  border-radius: var(--radius-lg);
+  background: rgba(16, 16, 24, 0.78);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  position: relative;
+}
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 50%;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s;
+}
+.modal-close:hover { background: rgba(255, 255, 255, 0.08); }
+.modal-close svg { width: 18px; height: 18px; fill: currentColor; }
+
+.modal h2 {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+.modal p {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.form-input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.form-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(91, 124, 250, 0.15);
+}
+.form-input::placeholder { color: var(--text-muted); opacity: 0.5; }
+
+.btn-submit {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  letter-spacing: 0.01em;
+}
+.btn-submit:hover { background: #4a6be0; }
+
+.btn-admin-link {
+  display: block;
+  text-align: center;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  letter-spacing: 0.02em;
+}
+.btn-admin-link:hover { color: var(--accent); }
+
+/* ===== Fullscreen tweaks ===== */
+.app:fullscreen .controls-overlay { opacity: 1; }
+.app:fullscreen .controls-overlay.hidden { opacity: 0; }
+.app:fullscreen .player { border-radius: 0; }
+.app:fullscreen .sidebar { display: none; }
+
+/* ===== Fullscreen toggle button ===== */
+.btn-fullscreen {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  z-index: 5;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.06);
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s;
+}
+.btn-fullscreen:hover { background: rgba(0, 0, 0, 0.6); }
+.btn-fullscreen svg { width: 18px; height: 18px; fill: currentColor; }
+
+/* ===== User badge ===== */
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(91, 124, 250, 0.2);
+  border: 1px solid var(--accent-border);
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.user-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* ===== Clock in sidebar ===== */
+.sidebar-clock {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  margin-bottom: 4px;
+  padding: 0 4px;
+}
+
+/* ===== Mobile menu button ===== */
+.menu-btn {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 12;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.06);
+  color: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  cursor: pointer;
+  display: none;
+  place-items: center;
+  transition: background 0.15s;
+}
+.menu-btn:hover { background: rgba(0, 0, 0, 0.55); }
+.menu-btn svg { width: 20px; height: 20px; fill: currentColor; }
+
+/* ===== Drawer backdrop ===== */
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+.drawer-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ===== Mobile breakpoint ===== */
+@media (max-width: 768px) {
+  .app {
+    padding: 0;
+    gap: 0;
+  }
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: min(320px, 85vw);
+    height: 100%;
+    z-index: 60;
+    border-radius: 0;
+    border: none;
+    border-right: 1px solid var(--glass-border);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    padding-top: calc(16px + env(safe-area-inset-top, 0px));
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .menu-btn {
+    display: grid;
+  }
+  .player {
+    border-radius: 0;
+  }
+  .app:fullscreen .sidebar { display: none; }
+  .video-info {
+    padding: 32px 16px 16px;
+  }
+  .video-info h1 {
+    font-size: 20px;
+    letter-spacing: -0.01em;
+  }
+  .video-info .meta {
+    font-size: 13px;
+  }
+  .controls-overlay {
+    right: 12px;
+  }
+  .controls-pill {
+    width: 48px;
+    padding: 6px 4px;
+  }
+  .btn-control {
+    width: 40px;
+    height: 40px;
+  }
+  .btn-control svg {
+    width: 18px;
+    height: 18px;
+  }
+  .volume-track {
+    height: 56px;
+  }
+  .resolution-picker {
+    right: 68px;
+    bottom: 76px;
+    min-width: 150px;
+  }
+  .btn-fullscreen {
+    width: 38px;
+    height: 38px;
+    bottom: 16px;
+    right: 16px;
+  }
+  .btn-fullscreen svg {
+    width: 16px;
+    height: 16px;
+  }
+  .modal {
+    padding: 24px 20px 24px;
+    border-radius: var(--radius-md);
+  }
+  .modal h2 {
+    font-size: 20px;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- ===== Sidebar ===== -->
+  <aside class="sidebar glass" data-od-id="sidebar">
+    <div class="sidebar-header">
+      <h2>Channels</h2>
+      <div id="auth-area">
+        <button class="btn-glass" id="btnSignIn">Sign In</button>
+      </div>
+    </div>
+    <div class="sidebar-clock" id="clockDisplay"></div>
+    <div class="channel-list" id="channelList"></div>
+    <button class="btn-add-channel" id="btnAddChannel">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Add Channel
+    </button>
+  </aside>
+
+  <!-- ===== Drawer backdrop (mobile) ===== -->
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+
+  <!-- ===== Player ===== -->
+  <main class="player" data-od-id="player" id="playerArea">
+    <button class="menu-btn" id="menuBtn" data-od-id="menu-button" aria-label="Toggle channel list">
+      <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="2" rx="1"/><rect x="3" y="11" width="18" height="2" rx="1"/><rect x="3" y="16" width="18" height="2" rx="1"/></svg>
+    </button>
+    <div class="player-bg"></div>
+
+    <div class="video-info" data-od-id="video-info">
+      <div class="label"><span class="live-dot"></span> LIVE</div>
+      <h1 id="videoTitle">Champions League Final</h1>
+      <div class="meta" id="videoMeta">Sports HD · Football</div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-overlay" id="controlsOverlay">
+      <div class="controls-pill">
+        <button class="btn-control" id="btnPlay" aria-label="Play / Pause">
+          <svg viewBox="0 0 24 24"><polygon points="8,5 20,12 8,19" fill="currentColor"/></svg>
+        </button>
+        <button class="btn-control" id="btnSkipBack" aria-label="Skip back 15 seconds">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/><text x="9" y="17" font-size="8" font-weight="700" fill="currentColor" stroke="none">15</text></svg>
+        </button>
+        <button class="btn-control" id="btnSkipFwd" aria-label="Skip forward 30 seconds">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/><text x="9" y="17" font-size="8" font-weight="700" fill="currentColor" stroke="none">30</text></svg>
+        </button>
+
+        <div class="volume-section">
+          <button class="btn-control" id="btnVolDown" aria-label="Volume down">
+            <svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5zM19 12l3-3M22 12l-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+          </button>
+
+          <div class="volume-track" id="volumeTrack">
+            <div class="volume-fill" id="volumeFill" style="height:75%"></div>
+            <div class="volume-thumb" id="volumeThumb" style="bottom:75%"></div>
+          </div>
+
+          <button class="btn-control" id="btnVolUp" aria-label="Volume up">
+            <svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+          </button>
+
+          <button class="btn-control" id="btnMute" aria-label="Mute">
+            <svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor"/><line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+
+        <button class="btn-control" id="btnSettings" aria-label="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Resolution picker -->
+    <div class="resolution-picker" id="resolutionPicker">
+      <h3>Resolution</h3>
+      <div class="resolution-option active" data-res="Auto">
+        Auto
+        <span class="check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </div>
+      <div class="resolution-option" data-res="4K (2160p)">
+        4K (2160p)
+        <span class="check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </div>
+      <div class="resolution-option" data-res="1080p">
+        1080p
+        <span class="check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </div>
+      <div class="resolution-option" data-res="720p">
+        720p
+        <span class="check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </div>
+      <div class="resolution-option" data-res="480p">
+        480p
+        <span class="check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </div>
+    </div>
+
+    <!-- Fullscreen button -->
+    <button class="btn-fullscreen" id="btnFullscreen" aria-label="Toggle fullscreen">
+      <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </main>
+
+</div>
+
+<!-- ===== Login Modal ===== -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal" data-od-id="login-modal">
+    <button class="modal-close" id="modalClose" aria-label="Close">
+      <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <h2>Sign In</h2>
+    <p>Access your channel list and preferences.</p>
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" class="form-input" placeholder="you@example.com" autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" class="form-input" placeholder="Enter your password" autocomplete="current-password" />
+      </div>
+      <button type="submit" class="btn-submit">Sign In</button>
+    </form>
+    <button class="btn-admin-link" id="btnAdminLink">Admin access</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ===== Channel data =====
+  const channels = [
+    { id: 1, number: '01', name: 'Sports HD', category: 'Sports', nowPlaying: 'Champions League Final', online: true },
+    { id: 2, number: '02', name: 'News 24/7', category: 'News', nowPlaying: 'World News Tonight', online: true },
+    { id: 3, number: '03', name: 'Movie Max', category: 'Movies', nowPlaying: 'Interstellar (2014)', online: true },
+    { id: 4, number: '04', name: 'Discovery World', category: 'Documentary', nowPlaying: 'Planet Earth III', online: true },
+    { id: 5, number: '05', name: 'Kids Zone', category: 'Kids', nowPlaying: 'Animated Adventures', online: true },
+    { id: 6, number: '06', name: 'Music TV', category: 'Music', nowPlaying: 'Live Concert: Coldplay', online: true },
+    { id: 7, number: '07', name: 'History Channel', category: 'History', nowPlaying: 'Ancient Rome Revealed', online: false },
+    { id: 8, number: '08', name: 'Food Network', category: 'Food', nowPlaying: 'MasterChef Finals', online: true },
+  ];
+
+  const resolutions = ['Auto', '4K (2160p)', '1080p', '720p', '480p'];
+
+  // ===== State =====
+  const state = {
+    currentChannel: 0,
+    isPlaying: true,
+    volume: 75,
+    prevVolume: 75,
+    isMuted: false,
+    isFullscreen: false,
+    controlsVisible: true,
+    hideTimeout: null,
+    resolution: 'Auto',
+    pickerOpen: false,
+    loginOpen: false,
+    isLoggedIn: false,
+    username: '',
+  };
+
+  // ===== DOM refs =====
+  const $ = id => document.getElementById(id);
+  const channelList = $('channelList');
+  const videoTitle = $('videoTitle');
+  const videoMeta = $('videoMeta');
+  const controlsOverlay = $('controlsOverlay');
+  const volumeFill = $('volumeFill');
+  const volumeThumb = $('volumeThumb');
+  const volumeTrack = $('volumeTrack');
+  const btnPlay = $('btnPlay');
+  const btnMute = $('btnMute');
+  const btnSettings = $('btnSettings');
+  const btnFullscreen = $('btnFullscreen');
+  const resolutionPicker = $('resolutionPicker');
+  const loginModal = $('loginModal');
+  const btnSignIn = $('btnSignIn');
+  const modalClose = $('modalClose');
+  const loginForm = $('loginForm');
+  const authArea = $('auth-area');
+  const appEl = $('app');
+  const sidebar = document.querySelector('.sidebar');
+  const menuBtn = $('menuBtn');
+  const drawerBackdrop = $('drawerBackdrop');
+
+  // ===== Mobile menu =====
+  var menuOpen = false;
+
+  function toggleMenu(open) {
+    menuOpen = open !== undefined ? open : !menuOpen;
+    sidebar.classList.toggle('open', menuOpen);
+    drawerBackdrop.classList.toggle('open', menuOpen);
+  }
+
+  if (menuBtn) {
+    menuBtn.addEventListener('click', function(e) { e.stopPropagation(); toggleMenu(); });
+  }
+  if (drawerBackdrop) {
+    drawerBackdrop.addEventListener('click', function() { toggleMenu(false); });
+  }
+
+  // ===== Clock =====
+  function updateClock() {
+    const now = new Date();
+    const time = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+    $('clockDisplay').textContent = time;
+  }
+  updateClock();
+  setInterval(updateClock, 30000);
+
+  // ===== Render channels =====
+  function renderChannels() {
+    channelList.innerHTML = '';
+    channels.forEach((ch, i) => {
+      const el = document.createElement('div');
+      el.className = 'channel-item' + (i === state.currentChannel ? ' active' : '') + (!ch.online ? ' offline' : '');
+      el.dataset.index = i;
+      el.innerHTML =
+        '<span class="channel-number">' + ch.number + '</span>' +
+        '<div class="channel-info">' +
+          '<span class="channel-name">' + ch.name + '</span>' +
+          '<span class="channel-category">' + ch.category + '</span>' +
+        '</div>' +
+        '<span class="channel-now-playing">' + ch.nowPlaying + '</span>' +
+        '<span class="channel-status ' + (ch.online ? 'online' : 'offline') + '"></span>';
+      el.addEventListener('click', function() { selectChannel(parseInt(this.dataset.index)); });
+      channelList.appendChild(el);
+    });
+  }
+
+  // ===== Select channel =====
+  function selectChannel(i) {
+    if (i === state.currentChannel) return;
+    state.currentChannel = i;
+    const ch = channels[i];
+    renderChannels();
+    videoTitle.textContent = ch.nowPlaying;
+    videoMeta.textContent = ch.name + ' · ' + ch.category;
+    state.isPlaying = true;
+    updatePlayButton();
+    if (window.innerWidth <= 768) toggleMenu(false);
+  }
+
+  // ===== Play / Pause =====
+  function togglePlay() {
+    state.isPlaying = !state.isPlaying;
+    updatePlayButton();
+  }
+
+  function updatePlayButton() {
+    btnPlay.innerHTML = state.isPlaying
+      ? '<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor"/><rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor"/></svg>'
+      : '<svg viewBox="0 0 24 24"><polygon points="8,5 20,12 8,19" fill="currentColor"/></svg>';
+  }
+
+  // ===== Volume =====
+  function setVolume(v) {
+    state.volume = Math.max(0, Math.min(100, v));
+    state.isMuted = false;
+    applyVolume();
+  }
+
+  function applyVolume() {
+    const pct = state.isMuted ? 0 : state.volume;
+    volumeFill.style.height = pct + '%';
+    volumeThumb.style.bottom = pct + '%';
+    updateMuteIcon();
+  }
+
+  function toggleMute() {
+    if (state.isMuted) {
+      state.isMuted = false;
+      state.volume = state.prevVolume;
+    } else {
+      state.prevVolume = state.volume || 75;
+      state.isMuted = true;
+    }
+    applyVolume();
+  }
+
+  function updateMuteIcon() {
+    const muted = state.isMuted || state.volume === 0;
+    btnMute.innerHTML = muted
+      ? '<svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor"/><line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
+      : '<svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>';
+  }
+
+  // Volume track click/drag
+  function volumeFromEvent(e) {
+    const rect = volumeTrack.getBoundingClientRect();
+    const y = e.clientY || (e.touches && e.touches[0].clientY);
+    if (!y) return;
+    const pct = Math.max(0, Math.min(100, (rect.bottom - y) / rect.height * 100));
+    setVolume(Math.round(pct));
+  }
+
+  let volumeDragging = false;
+  volumeTrack.addEventListener('mousedown', function(e) {
+    volumeDragging = true;
+    volumeFromEvent(e);
+  });
+  volumeTrack.addEventListener('touchstart', function(e) {
+    volumeDragging = true;
+    volumeFromEvent(e);
+  }, { passive: false });
+  document.addEventListener('mousemove', function(e) {
+    if (volumeDragging) volumeFromEvent(e);
+  });
+  document.addEventListener('touchmove', function(e) {
+    if (volumeDragging) { e.preventDefault(); volumeFromEvent(e); }
+  }, { passive: false });
+  document.addEventListener('mouseup', function() { volumeDragging = false; });
+  document.addEventListener('touchend', function() { volumeDragging = false; });
+
+  // ===== Resolution picker =====
+  function togglePicker() {
+    state.pickerOpen = !state.pickerOpen;
+    resolutionPicker.classList.toggle('open', state.pickerOpen);
+  }
+
+  function selectResolution(res) {
+    state.resolution = res;
+    document.querySelectorAll('.resolution-option').forEach(function(el) {
+      el.classList.toggle('active', el.dataset.res === res);
+    });
+  }
+
+  // ===== Fullscreen =====
+  function toggleFullscreen() {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      appEl.requestFullscreen().catch(function() {});
+    }
+  }
+
+  // ===== Controls auto-hide =====
+  function showControls(keep) {
+    controlsOverlay.classList.remove('hidden');
+    if (state.hideTimeout) { clearTimeout(state.hideTimeout); state.hideTimeout = null; }
+    if (!keep && document.fullscreenElement) {
+      state.hideTimeout = setTimeout(function() { controlsOverlay.classList.add('hidden'); }, 2000);
+    }
+  }
+
+  function hideControls() {
+    controlsOverlay.classList.add('hidden');
+  }
+
+  // ===== Login modal =====
+  function openLogin() {
+    state.loginOpen = true;
+    loginModal.classList.add('open');
+  }
+
+  function closeLogin() {
+    state.loginOpen = false;
+    loginModal.classList.remove('open');
+  }
+
+  // ===== Events =====
+  btnPlay.addEventListener('click', togglePlay);
+
+  $('btnSkipBack').addEventListener('click', function() {});
+  $('btnSkipFwd').addEventListener('click', function() {});
+  $('btnVolDown').addEventListener('click', function() { setVolume(state.volume - 10); });
+  $('btnVolUp').addEventListener('click', function() { setVolume(state.volume + 10); });
+  btnMute.addEventListener('click', toggleMute);
+  btnSettings.addEventListener('click', function(e) { e.stopPropagation(); togglePicker(); });
+  btnFullscreen.addEventListener('click', toggleFullscreen);
+
+  btnSignIn.addEventListener('click', openLogin);
+  modalClose.addEventListener('click', closeLogin);
+  loginModal.addEventListener('click', function(e) { if (e.target === loginModal) closeLogin(); });
+
+  loginForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    state.isLoggedIn = true;
+    state.username = document.getElementById('email').value.split('@')[0] || 'User';
+    closeLogin();
+    updateAuthUI();
+  });
+
+  $('btnAdminLink').addEventListener('click', function(e) {
+    e.preventDefault();
+    closeLogin();
+  });
+
+  $('btnAddChannel').addEventListener('click', function() {
+    if (!state.isLoggedIn) { openLogin(); return; }
+  });
+
+  // Resolution options
+  document.querySelectorAll('.resolution-option').forEach(function(el) {
+    el.addEventListener('click', function() { selectResolution(this.dataset.res); });
+  });
+
+  // Close picker on click outside
+  document.addEventListener('click', function(e) {
+    if (state.pickerOpen && !resolutionPicker.contains(e.target) && e.target !== btnSettings && !btnSettings.contains(e.target)) {
+      state.pickerOpen = false;
+      resolutionPicker.classList.remove('open');
+    }
+  });
+
+  // Controls auto-hide in fullscreen
+  document.addEventListener('fullscreenchange', function() {
+    state.isFullscreen = !!document.fullscreenElement;
+    if (state.isFullscreen) {
+      showControls(true);
+    } else {
+      showControls(true);
+      if (state.hideTimeout) { clearTimeout(state.hideTimeout); state.hideTimeout = null; }
+    }
+  });
+
+  // Show controls on interaction in fullscreen
+  document.addEventListener('mousemove', function() {
+    if (document.fullscreenElement) { showControls(false); }
+  });
+  document.addEventListener('touchstart', function() {
+    if (document.fullscreenElement) { showControls(false); }
+  });
+
+  // ===== Auth UI =====
+  function updateAuthUI() {
+    if (state.isLoggedIn && state.username) {
+      authArea.innerHTML =
+        '<div class="user-badge">' +
+          '<div class="user-avatar">' + state.username.charAt(0).toUpperCase() + '</div>' +
+          '<span class="user-name">' + state.username + '</span>' +
+          '<button class="btn-glass" id="btnSignOut">Sign Out</button>' +
+        '</div>';
+      $('btnSignOut').addEventListener('click', function() {
+        state.isLoggedIn = false;
+        state.username = '';
+        authArea.innerHTML = '<button class="btn-glass" id="btnSignIn">Sign In</button>';
+        $('btnSignIn').addEventListener('click', openLogin);
+      });
+    }
+  }
+
+  // ===== Init =====
+  renderChannels();
+  updatePlayButton();
+  applyVolume();
+  selectChannel(0);
+})();
+</script>
+</body>
+</html>
