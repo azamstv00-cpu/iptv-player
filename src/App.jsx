@@ -76,6 +76,14 @@ const CORS_PROXIES = [
     return () => clearInterval(id);
   }, []);
 
+  const applyProxy = useCallback((urlText) => {
+    if (!useCorsProxy || !corsProxyUrl.trim()) return urlText;
+    const base = corsProxyUrl.trim();
+    const encode = base.includes('?');
+    const sep = base.endsWith('/') || base.endsWith('?') || base.endsWith('=') ? '' : '/';
+    return base + sep + (encode ? encodeURIComponent(urlText) : urlText);
+  }, [useCorsProxy, corsProxyUrl]);
+
   const handleSelectChannel = useCallback((ch) => {
     setError(null);
     setActiveChannel(ch);
@@ -84,14 +92,6 @@ const CORS_PROXIES = [
     setSource({ url: applyProxy(ch.url), drm, format });
     setMenuOpen(false);
   }, [applyProxy]);
-
-  const applyProxy = useCallback((urlText) => {
-    if (!useCorsProxy || !corsProxyUrl.trim()) return urlText;
-    const base = corsProxyUrl.trim();
-    const encode = base.includes('?');
-    const sep = base.endsWith('/') || base.endsWith('?') || base.endsWith('=') ? '' : '/';
-    return base + sep + (encode ? encodeURIComponent(urlText) : urlText);
-  }, [useCorsProxy, corsProxyUrl]);
 
   const handleLoad = useCallback((text) => {
     setError(null);
