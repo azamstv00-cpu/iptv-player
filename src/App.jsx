@@ -39,14 +39,19 @@ const AgentationLazy = import.meta.env.MODE === 'development'
   ? lazy(() => import('agentation').then(m => ({ default: m.Agentation })))
   : () => null;
 
+const LOCAL_IP = '192.168.0.136';
 const CORS_PROXIES = [
     { label: 'thingproxy.freeboard.io', url: 'https://thingproxy.freeboard.io/fetch/' },
     { label: 'corsproxy.io', url: 'https://corsproxy.io/?' },
     { label: 'api.allorigins.win', url: 'https://api.allorigins.win/raw?url=' },
+    { label: 'Local cors-anywhere', url: `http://${LOCAL_IP}:8080/` },
     { label: 'Custom', url: '' },
   ];
-  const [useCorsProxy, setUseCorsProxy] = useState(false);
-  const [corsProxyUrl, setCorsProxyUrl] = useState('https://thingproxy.freeboard.io/fetch/');
+  const defaultProxy = import.meta.env.MODE === 'home'
+    ? `http://${LOCAL_IP}:8080/`
+    : 'https://thingproxy.freeboard.io/fetch/';
+  const [useCorsProxy, setUseCorsProxy] = useState(import.meta.env.MODE === 'home');
+  const [corsProxyUrl, setCorsProxyUrl] = useState(defaultProxy);
   const appRef = useRef(null);
 
   useEffect(() => {
@@ -76,9 +81,9 @@ const CORS_PROXIES = [
     setActiveChannel(ch);
     const drm = ch.drmKeyId && ch.drmKey ? { keyId: ch.drmKeyId, key: ch.drmKey } : null;
     const format = ch.url.includes('.mpd') ? 'DASH' : 'HLS';
-    setSource({ url: ch.url, drm, format });
+    setSource({ url: applyProxy(ch.url), drm, format });
     setMenuOpen(false);
-  }, []);
+  }, [applyProxy]);
 
   const applyProxy = useCallback((urlText) => {
     if (!useCorsProxy || !corsProxyUrl.trim()) return urlText;
