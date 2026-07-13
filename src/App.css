@@ -443,8 +443,8 @@
 .resolution-picker {
   position: absolute;
   right: 90px;
-  bottom: auto;
-  top: 80px;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: 20;
   min-width: 180px;
   padding: 12px;
@@ -797,8 +797,8 @@
   }
   .resolution-picker {
     right: 68px;
-    bottom: auto;
-    top: 60px;
+    top: 50%;
+    transform: translateY(-50%);
     min-width: 150px;
   }
   .bottom-controls-row { bottom: 16px; right: 16px; gap: 4px; }
