@@ -264,11 +264,17 @@ const CORS_PROXIES = [
           </div>
         )}
 
-        {source && !activeChannel && !loading && user && (
-          <button className="btn-save-channel" onClick={() => setSaveDialog(true)}>
-            + Save to Channels
-          </button>
-        )}
+        {source && !activeChannel && !loading && user && (() => {
+          const origUrl = saveCandidate.current?.url || source.url;
+          const already = channels.some(c => {
+            const cu = c.url.split('|')[0].split('?')[0].replace(/\/+$/, '');
+            const su = origUrl.split('|')[0].split('?')[0].replace(/\/+$/, '');
+            return cu === su;
+          });
+          return already
+            ? <div className="toast-msg">Already in your channel list</div>
+            : <button className="btn-save-channel" onClick={() => setSaveDialog(true)}>+ Save to Channels</button>;
+        })()}
 
         {saveDialog && (
           <div className="modal-overlay open" onClick={() => setSaveDialog(false)}>
