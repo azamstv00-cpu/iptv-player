@@ -209,7 +209,7 @@ const CORS_PROXIES = [
             <div className="url-input-group">
               <textarea
                 className="url-input"
-                placeholder="Paste MPD URL or M3U here..."
+                placeholder="Paste any stream URL (MPD, M3U8, TS) or text with keys..."
                 rows={2}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {

@@ -124,7 +124,7 @@ export default function AdminPanel({ onClose, initialChannel }) {
           </div>
           <div className="form-group">
             <label htmlFor="chUrl">Stream URL</label>
-            <textarea id="chUrl" className="form-input" style={{resize:'vertical', minHeight:48, fontFamily:'inherit'}} placeholder="Paste MPD URL or M3U with KODIPROP tags" value={url} onChange={e => handleUrlChange(e.target.value)} rows={2} required />
+            <textarea id="chUrl" className="form-input" style={{resize:'vertical', minHeight:64, fontFamily:'inherit'}} placeholder="Paste MPD / M3U8 / TS URL or any format with keys" value={url} onChange={e => handleUrlChange(e.target.value)} rows={3} required />
           </div>
           {drmDetected && <span className="drm-detected" style={{marginBottom:12}}>ClearKey DRM detected</span>}
           {error && <p style={{color:'var(--error)', fontSize:13, marginBottom:12}}>{error}</p>}

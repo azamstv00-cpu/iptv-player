@@ -1,5 +1,57 @@
+function extractKeys(raw) {
+  let kid = null, key = null;
+
+  const tryPair = (k, v) => {
+    const isKid = /^(kid|keyid|key_id|drmkeyid|license_key)$/i.test(k.trim());
+    const isKey = /^(key|drmkey|license)$/i.test(k.trim());
+    if (isKid && v) kid = (kid || v.trim());
+    if (isKey && v) key = (key || v.trim());
+  };
+
+  if (typeof raw === 'string') {
+    try {
+      const json = JSON.parse(raw);
+      if (json && typeof json === 'object') {
+        if (json.kid && json.key) { kid = json.kid; key = json.key; }
+        else if (json.keyId && json.key) { kid = json.keyId; key = json.key; }
+        else if (json.key_id && json.key) { kid = json.key_id; key = json.key; }
+        else if (json.license_key) {
+          const p = json.license_key.split(':');
+          if (p.length === 2) { kid = p[0]; key = p[1]; }
+        }
+      }
+    } catch (_) {}
+  }
+
+  if (kid && key) return { keyId: kid, key };
+
+  const colonPairs = raw.match(/(?:kid|keyid|key_id|drmkeyid|license_key|key|drmkey|license)\s*[:=]\s*([0-9a-fA-F]{32})/gi);
+  if (colonPairs && colonPairs.length >= 2) {
+    const map = {};
+    for (const pair of colonPairs) {
+      const m = pair.match(/(kid|keyid|key_id|drmkeyid|license_key|key|drmkey|license)\s*[:=]\s*([0-9a-fA-F]{32})/i);
+      if (m) {
+        const k = m[1].toLowerCase();
+        if (/^(kid|keyid|key_id|drmkeyid|license_key)$/.test(k)) map.kid = m[2];
+        else if (/^(key|drmkey|license)$/.test(k)) map.key = m[2];
+      }
+    }
+    if (map.kid && map.key) return { keyId: map.kid, key: map.key };
+  }
+
+  const hex32 = raw.match(/\b([0-9a-fA-F]{32})\b/g);
+  if (hex32 && hex32.length >= 2) {
+    return { keyId: hex32[0], key: hex32[1] };
+  }
+
+  return null;
+}
+
 export function parseInput(text) {
-  const lines = text.trim().split('\n').map(l => l.trim()).filter(Boolean);
+  const raw = text.trim();
+  if (!raw) return null;
+
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
 
   let url = null;
   let keyId = null;
@@ -7,20 +59,41 @@ export function parseInput(text) {
 
   for (const line of lines) {
     if (line.startsWith('#KODIPROP:inputstream.adaptive.license_key=')) {
-      const rawKey = line.split('=').slice(1).join('=');
-      const parts = rawKey.split(':');
+      const rawKey = line.split('=').slice(1).join('=').trim();
+      const parts = rawKey.split(':').filter(Boolean);
       if (parts.length === 2) {
         keyId = parts[0].trim();
         key = parts[1].trim();
       }
     }
-    if (line.startsWith('http') && !url) {
+  }
+
+  for (const line of lines) {
+    if ((line.startsWith('http://') || line.startsWith('https://')) && !url) {
       url = line;
     }
   }
 
+  for (const line of lines) {
+    const extracted = extractKeys(line);
+    if (extracted) {
+      if (!keyId) keyId = extracted.keyId;
+      if (!key) key = extracted.key;
+    }
+  }
+
   if (!url) {
-    url = lines.find(l => l.startsWith('http')) || null;
+    const httpLines = raw.match(/https?:\/\/[^\s<>"']+/g);
+    if (httpLines) {
+      for (const u of httpLines) {
+        const clean = u.replace(/[),;]+$/, '');
+        if (/\.(mpd|m3u8?|ts)/i.test(clean) || clean.includes('/mpd') || /\.(mp4|webm)/i.test(clean)) {
+          url = clean;
+          break;
+        }
+      }
+      if (!url) url = httpLines[0].replace(/[),;]+$/, '');
+    }
   }
 
   if (!url) return null;
@@ -31,12 +104,14 @@ export function parseInput(text) {
     const pipeParams = new URLSearchParams(suffix.replace(/&/g, '&'));
     const licenseKey = pipeParams.get('drmLicense');
     if (licenseKey) {
-      const parts = licenseKey.split(':');
+      const parts = licenseKey.split(':').filter(Boolean);
       if (parts.length === 2) {
-        keyId = parts[0].trim();
-        key = parts[1].trim();
+        keyId = keyId || parts[0].trim();
+        key = key || parts[1].trim();
       }
     }
+    const pipeKeys = extractKeys(suffix);
+    if (pipeKeys) { keyId = keyId || pipeKeys.keyId; key = key || pipeKeys.key; }
     url = url.slice(0, pipeIndex);
   }
 
@@ -45,16 +120,20 @@ export function parseInput(text) {
     const params = new URLSearchParams(url.slice(qIndex));
     const licenseKey = params.get('drmLicense');
     if (licenseKey) {
-      const parts = licenseKey.split(':');
+      const parts = licenseKey.split(':').filter(Boolean);
       if (parts.length === 2) {
-        keyId = parts[0].trim();
-        key = parts[1].trim();
+        keyId = keyId || parts[0].trim();
+        key = key || parts[1].trim();
       }
     }
   }
 
-  const drm = keyId && key ? { keyId, key } : null;
-  const isMpd = url.includes('.mpd') || url.includes('/mpd');
+  let format = 'HLS';
+  if (/\.mpd/i.test(url) || /\/mpd\//i.test(url)) format = 'DASH';
+  else if (/\.m3u8?/i.test(url)) format = 'HLS';
+  else if (/\.ts/i.test(url)) format = 'HLS';
 
-  return { url, drm, format: isMpd ? 'DASH' : 'HLS' };
+  const drm = keyId && key ? { keyId, key } : null;
+
+  return { url, drm, format };
 }
