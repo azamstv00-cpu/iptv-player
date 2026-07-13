@@ -37,6 +37,7 @@ function App() {
   const [clock, setClock] = useState('');
   const [saveDialog, setSaveDialog] = useState(false);
   const [editChannel, setEditChannel] = useState(null);
+  const [saveBtnHidden, setSaveBtnHidden] = useState(false);
   const saveCandidate = useRef(null);
 const AgentationLazy = import.meta.env.MODE === 'development'
   ? lazy(() => import('agentation').then(m => ({ default: m.Agentation })))
@@ -96,6 +97,17 @@ const CORS_PROXIES = [
     setSource({ url: applyProxy(cleanUrl), drm, format });
     setMenuOpen(false);
   }, [applyProxy]);
+
+  useEffect(() => {
+    if (!source || activeChannel) { setSaveBtnHidden(false); return; }
+    const origUrl = saveCandidate.current?.url || source.url;
+    const isSaved = channels.some(c => {
+      const cu = c.url.split('|')[0].split('?')[0].replace(/\/+$/, '');
+      const su = origUrl.split('|')[0].split('?')[0].replace(/\/+$/, '');
+      return cu === su;
+    });
+    setSaveBtnHidden(isSaved);
+  }, [source, channels, activeChannel]);
 
   const handleLoad = useCallback((text) => {
     setError(null);
@@ -264,17 +276,14 @@ const CORS_PROXIES = [
           </div>
         )}
 
-        {source && !activeChannel && !loading && user && (() => {
-          const origUrl = saveCandidate.current?.url || source.url;
-          const already = channels.some(c => {
-            const cu = c.url.split('|')[0].split('?')[0].replace(/\/+$/, '');
-            const su = origUrl.split('|')[0].split('?')[0].replace(/\/+$/, '');
-            return cu === su;
-          });
-          return already
-            ? <div className="toast-msg">Already in your channel list</div>
-            : <button className="btn-save-channel" onClick={() => setSaveDialog(true)}>+ Save to Channels</button>;
-        })()}
+        {source && !activeChannel && !loading && !saveBtnHidden && user && (
+          <button className="btn-save-channel" onClick={() => setSaveDialog(true)}>
+            + Save to Channels
+          </button>
+        )}
+        {source && !activeChannel && !loading && saveBtnHidden && user && (
+          <div className="toast-msg">Already in your channel list</div>
+        )}
 
         {saveDialog && (
           <div className="modal-overlay open" onClick={() => setSaveDialog(false)}>
