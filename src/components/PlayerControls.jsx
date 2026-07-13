@@ -211,20 +211,22 @@ export default function PlayerControls({ videoRef, containerRef, tracks, activeT
         </div>
       </div>
 
-      {showControls && channels && channels.length > 1 && fullscreen && (
-        <div className="nav-arrows">
-          <button className="btn-nav" onClick={() => goChannel(-1)} aria-label="Previous channel">
-            <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </button>
-          <button className="btn-nav" onClick={() => goChannel(1)} aria-label="Next channel">
-            <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      {showControls && (
+        <div className="bottom-controls-row">
+          {channels && channels.length > 1 && fullscreen && (
+            <>
+              <button className="btn-nav" onClick={() => goChannel(-1)} aria-label="Previous channel">
+                <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+              <button className="btn-nav" onClick={() => goChannel(1)} aria-label="Next channel">
+                <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            </>
+          )}
+          <button className="btn-fullscreen" onClick={toggleFullscreen} aria-label="Toggle fullscreen">
+            <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
         </div>
-      )}
-      {showControls && (
-        <button className="btn-fullscreen" onClick={toggleFullscreen} aria-label="Toggle fullscreen">
-          <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </button>
       )}
 
       <div className={`resolution-picker ${showRes ? 'open' : ''}`}>
