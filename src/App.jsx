@@ -182,7 +182,7 @@ const CORS_PROXIES = [
           <div className="error-overlay" onClick={() => setError(null)}>
             <div className="error-msg" onClick={e => e.stopPropagation()}>
               <span className="error-title">Error</span>
-              {error}
+              <div className="error-text">{error}</div>
               <button className="error-dismiss" onClick={() => setError(null)}>Dismiss</button>
             </div>
           </div>
