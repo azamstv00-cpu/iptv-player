@@ -91,8 +91,9 @@ const CORS_PROXIES = [
     setError(null);
     setActiveChannel(ch);
     const drm = ch.keyId && ch.key ? { keyId: ch.keyId, key: ch.key } : null;
-    const format = ch.url.includes('.mpd') ? 'DASH' : 'HLS';
-    setSource({ url: applyProxy(ch.url), drm, format });
+    const cleanUrl = ch.url.split('|')[0];
+    const format = cleanUrl.includes('.mpd') ? 'DASH' : 'HLS';
+    setSource({ url: applyProxy(cleanUrl), drm, format });
     setMenuOpen(false);
   }, [applyProxy]);
 

@@ -25,6 +25,21 @@ export function parseInput(text) {
 
   if (!url) return null;
 
+  const pipeIndex = url.indexOf('|');
+  if (pipeIndex !== -1) {
+    const suffix = url.slice(pipeIndex + 1);
+    const pipeParams = new URLSearchParams(suffix.replace(/&/g, '&'));
+    const licenseKey = pipeParams.get('drmLicense');
+    if (licenseKey) {
+      const parts = licenseKey.split(':');
+      if (parts.length === 2) {
+        keyId = parts[0].trim();
+        key = parts[1].trim();
+      }
+    }
+    url = url.slice(0, pipeIndex);
+  }
+
   const qIndex = url.indexOf('?');
   if (qIndex !== -1) {
     const params = new URLSearchParams(url.slice(qIndex));
