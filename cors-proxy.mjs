@@ -20,6 +20,8 @@ http.createServer((req, res) => {
     Object.entries(req.headers).filter(([k]) => !blockedHeaders.includes(k.toLowerCase()))
   );
   cleanHeaders['user-agent'] = 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Mobile Safari/537.36';
+  cleanHeaders['origin'] = 'https://dude.mvp.bd';
+  cleanHeaders['referer'] = 'https://dude.mvp.bd/';
 
   const proxyReq = mod.request(target, { method: req.method, headers: { ...cleanHeaders, host: url.hostname } }, (proxyRes) => {
     res.writeHead(proxyRes.statusCode, {
@@ -31,6 +33,6 @@ http.createServer((req, res) => {
     proxyRes.pipe(res);
   });
 
-  proxyReq.on('error', (e) => { console.error('Proxy error:', e.message); res.writeHead(502); res.end('Proxy error: ' + e.message); });
+  proxyReq.on('error', (e) => { console.error('Proxy error:', e.message); res.writeHead(502); res.end('Proxy error'); });
   req.pipe(proxyReq);
 }).listen(PORT, () => console.log(`CORS proxy running on http://localhost:${PORT}`));
