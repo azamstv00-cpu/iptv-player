@@ -39,8 +39,9 @@ export function useShakaPlayer(videoRef) {
 
     readyRef.current = new Promise(resolve => { resolveReady = resolve; });
 
-    import('shaka-player').then(shaka => {
+    import('shaka-player').then(async shaka => {
       if (cancelled) { resolveReady(); return; }
+
       shaka.polyfill.installAll();
       if (!shaka.Player.isBrowserSupported()) { resolveReady(); return; }
 
@@ -49,17 +50,18 @@ export function useShakaPlayer(videoRef) {
 
       player.configure({
         streaming: {
-          bufferingGoal: 60,
-          rebufferingGoal: 15,
-          bufferBehind: 120,
-          segmentPrefetchLimit: 5,
+          bufferingGoal: 120,
+          rebufferingGoal: 5,
+          bufferBehind: 30,
+          segmentPrefetchLimit: 10,
           startAtSegmentBoundary: true,
+          infiniteLiveStreamDuration: true,
           retryParameters: {
-            maxAttempts: 4,
-            baseDelay: 1000,
-            backoffFactor: 2,
+            maxAttempts: 2,
+            baseDelay: 500,
+            backoffFactor: 1.5,
             fuzzFactor: 0.5,
-            timeout: 30000,
+            timeout: 10000,
           },
         },
         abr: {
@@ -72,6 +74,9 @@ export function useShakaPlayer(videoRef) {
         manifest: {
           dash: {
             defaultPresentationDelay: 8,
+          },
+          hls: {
+            ignoreManifestProgramDateTime: true,
           },
         },
       });
