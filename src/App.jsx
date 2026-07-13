@@ -38,6 +38,7 @@ function App() {
   const [saveDialog, setSaveDialog] = useState(false);
   const [editChannel, setEditChannel] = useState(null);
   const [saveBtnHidden, setSaveBtnHidden] = useState(false);
+  const [matchedChannelName, setMatchedChannelName] = useState('');
   const saveCandidate = useRef(null);
 const AgentationLazy = import.meta.env.MODE === 'development'
   ? lazy(() => import('agentation').then(m => ({ default: m.Agentation })))
@@ -99,14 +100,15 @@ const CORS_PROXIES = [
   }, [applyProxy]);
 
   useEffect(() => {
-    if (!source || activeChannel) { setSaveBtnHidden(false); return; }
+    if (!source || activeChannel) { setSaveBtnHidden(false); setMatchedChannelName(''); return; }
     const origUrl = saveCandidate.current?.url || source.url;
-    const isSaved = channels.some(c => {
+    const match = channels.find(c => {
       const cu = c.url.split('|')[0].split('?')[0].replace(/\/+$/, '');
       const su = origUrl.split('|')[0].split('?')[0].replace(/\/+$/, '');
       return cu === su;
     });
-    setSaveBtnHidden(isSaved);
+    setSaveBtnHidden(!!match);
+    setMatchedChannelName(match ? match.name : '');
   }, [source, channels, activeChannel]);
 
   const handleLoad = useCallback((text) => {
@@ -282,7 +284,7 @@ const CORS_PROXIES = [
           </button>
         )}
         {source && !activeChannel && !loading && saveBtnHidden && user && (
-          <div className="toast-msg">Already in your channel list</div>
+          <div className="toast-msg">Already added: {matchedChannelName}</div>
         )}
 
         {saveDialog && (
