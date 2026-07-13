@@ -51,19 +51,52 @@ export function parseInput(text) {
   const raw = text.trim();
   if (!raw) return null;
 
-  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-
   let url = null;
   let keyId = null;
   let key = null;
+
+  // Try parsing entire input as JSON (handles single JSON object or array)
+  try {
+    const json = JSON.parse(raw);
+    if (Array.isArray(json) && json.length > 0) {
+      const first = json[0];
+      if (first.url && first.url.startsWith('http')) {
+        url = first.url;
+        keyId = first.kid || first.keyId || first.key_id || null;
+        key = first.key || null;
+        if (first.license_key) {
+          const p = first.license_key.split(':');
+          if (p.length === 2) { keyId = keyId || p[0]; key = key || p[1]; }
+        }
+      }
+    } else if (json && typeof json === 'object' && json.url && json.url.startsWith('http')) {
+      url = json.url;
+      keyId = json.kid || json.keyId || json.key_id || null;
+      key = json.key || null;
+      if (json.license_key) {
+        const p = json.license_key.split(':');
+        if (p.length === 2) { keyId = keyId || p[0]; key = key || p[1]; }
+      }
+    }
+  } catch (_) {}
+
+  if (url && keyId && key) {
+    const pipe = url.indexOf('|');
+    if (pipe !== -1) url = url.slice(0, pipe);
+    const format = /\.mpd/i.test(url) || /\/mpd\//i.test(url) ? 'DASH' : 'HLS';
+    return { url, drm: { keyId, key }, format };
+  }
+
+  // Not JSON or incomplete — fall back to line-by-line parsing
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
 
   for (const line of lines) {
     if (line.startsWith('#KODIPROP:inputstream.adaptive.license_key=')) {
       const rawKey = line.split('=').slice(1).join('=').trim();
       const parts = rawKey.split(':').filter(Boolean);
       if (parts.length === 2) {
-        keyId = parts[0].trim();
-        key = parts[1].trim();
+        keyId = keyId || parts[0].trim();
+        key = key || parts[1].trim();
       }
     }
   }
@@ -86,13 +119,13 @@ export function parseInput(text) {
     const httpLines = raw.match(/https?:\/\/[^\s<>"']+/g);
     if (httpLines) {
       for (const u of httpLines) {
-        const clean = u.replace(/[),;]+$/, '');
+        const clean = u.replace(/[),;"']+$/, '');
         if (/\.(mpd|m3u8?|ts)/i.test(clean) || clean.includes('/mpd') || /\.(mp4|webm)/i.test(clean)) {
           url = clean;
           break;
         }
       }
-      if (!url) url = httpLines[0].replace(/[),;]+$/, '');
+      if (!url) url = httpLines[0].replace(/[),;"']+$/, '');
     }
   }
 
@@ -132,6 +165,19 @@ export function parseInput(text) {
   if (/\.mpd/i.test(url) || /\/mpd\//i.test(url)) format = 'DASH';
   else if (/\.m3u8?/i.test(url)) format = 'HLS';
   else if (/\.ts/i.test(url)) format = 'HLS';
+
+  // Fallback: find hex32 pairs in the raw text, skipping URL path segments
+  if (!keyId || !key) {
+    const allHex = raw.match(/\b([0-9a-fA-F]{32})\b/g);
+    if (allHex && allHex.length >= 2) {
+      const urlHexes = url.match(/\b([0-9a-fA-F]{32})\b/g) || [];
+      const candidates = allHex.filter(h => !urlHexes.includes(h));
+      if (candidates.length >= 2) {
+        keyId = keyId || candidates[0];
+        key = key || candidates[1];
+      }
+    }
+  }
 
   const drm = keyId && key ? { keyId, key } : null;
 
