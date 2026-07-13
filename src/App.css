@@ -344,6 +344,12 @@
   margin-top: 2px;
 }
 
+/* ===== Cursor hide ===== */
+.cursor-hidden { cursor: none; }
+.cursor-hidden .controls-overlay,
+.cursor-hidden .bottom-controls-row,
+.cursor-hidden .resolution-picker { cursor: auto; }
+
 /* ===== Controls overlay ===== */
 .controls-overlay {
   position: absolute;

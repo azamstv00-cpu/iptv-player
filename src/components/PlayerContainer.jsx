@@ -35,7 +35,7 @@ export default function PlayerContainer({ source, onError, onLoadSuccess, onLoad
   const showVideoInfo = source && channelName;
 
   return (
-    <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
+    <div ref={containerRef} className={controlsHidden ? 'cursor-hidden' : ''} style={{ width: '100%', height: '100%', position: 'relative' }}>
       <video
         ref={videoRef}
         style={{ width: '100%', height: '100%', display: 'block', position: 'relative', zIndex: 1, objectFit: 'contain' }}
