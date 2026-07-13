@@ -116,21 +116,27 @@ const CORS_PROXIES = [
     const cat = CATEGORIES[err.category] || 'Unknown';
     const httpStatus = (err.data || []).find(d => String(d).match(/^\d{3}$/));
     const statusText = httpStatus ? String(httpStatus) : '';
-    const reason = statusText === '403' ? 'Forbidden'
-      : statusText === '404' ? 'Stream not found'
-      : statusText === '400' ? 'Bad request'
-      : statusText === '401' ? 'Unauthorized'
-      : statusText === '502' ? 'Bad gateway'
-      : statusText === '503' ? 'Service unavailable'
-      : err.code === 1002 ? 'DNS lookup failed'
-      : err.code === 6005 ? 'Encryption error'
-      : err.code === 6006 ? 'Missing license'
-      : err.code === 3003 ? 'Unsupported format'
-      : err.code === 3004 ? 'Unsupported codec'
-      : err.code === 4007 ? 'No streams found'
-      : err.code === 5000 ? 'DRM error'
-      : `Error ${err.code}`;
-    setError(statusText ? `${cat} ${err.code} · ${statusText} ${reason}` : `${cat} ${err.code} · ${reason}`);
+    const pair = (status, label, hint) => ({ label, hint });
+    const known = {
+      '403': pair('Forbidden', 'The server is blocking this request — try a different proxy or use no proxy.'),
+      '404': pair('Not found', 'The stream URL does not exist — check if the link is correct.'),
+      '400': pair('Bad request', 'The server rejected the request — the URL may be malformed.'),
+      '401': pair('Unauthorized', 'Authentication required — the stream needs valid credentials.'),
+      '502': pair('Bad gateway', 'The upstream server is down or unreachable.'),
+      '503': pair('Unavailable', 'The server is temporarily overloaded or down.'),
+    };
+    const errMap = {
+      1002: pair('DNS failure', 'The domain could not be resolved — check the URL for typos.'),
+      6005: pair('Decrypt error', 'The DRM key is wrong or the stream is not decryptable.'),
+      6006: pair('No license', 'ClearKey DRM keys are missing — provide keyId and key.'),
+      3003: pair('Bad format', 'The stream format is not recognized or unsupported.'),
+      3004: pair('Bad codec', 'Your browser cannot decode the video codec used.'),
+      4007: pair('Empty stream', 'No playable video/audio tracks were found in the manifest.'),
+      5000: pair('DRM error', 'Digital rights management rejected playback.'),
+    };
+    const match = known[statusText] || errMap[err.code] || pair(`Error ${err.code}`, '');
+    const line = statusText ? `${cat} ${err.code} · ${statusText} ${match.label}` : `${cat} ${err.code} · ${match.label}`;
+    setError(match.hint ? `${line}\n\n${match.hint}` : line);
     setLoading(false);
   }, []);
 
