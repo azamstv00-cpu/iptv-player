@@ -160,6 +160,25 @@
 .channel-status.online { background: var(--success); }
 .channel-status.offline { background: var(--error); }
 
+.btn-save-channel {
+  position: absolute;
+  z-index: 10;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--glass-elevated);
+  backdrop-filter: blur(var(--glass-elevated-blur));
+  border: 1px solid var(--glass-border);
+  color: #fff;
+  padding: 8px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+.btn-save-channel:hover { background: rgba(91, 124, 250, 0.3); }
+
 .btn-add-channel {
   display: flex;
   align-items: center;

@@ -5,7 +5,7 @@ import PlayerContainer from './components/PlayerContainer';
 import LoginModal from './components/LoginModal';
 import AdminPanel from './components/AdminPanel';
 import { parseInput } from './services/linkParser';
-import { reindexChannels } from './services/channels';
+import { addChannel, reindexChannels } from './services/channels';
 import { onAuth, logout } from './services/auth';
 
 const CORS_PROXIES = [
@@ -35,6 +35,8 @@ function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [clock, setClock] = useState('');
+  const [saveDialog, setSaveDialog] = useState(false);
+  const saveCandidate = useRef(null);
 const AgentationLazy = import.meta.env.MODE === 'development'
   ? lazy(() => import('agentation').then(m => ({ default: m.Agentation })))
   : () => null;
@@ -101,6 +103,7 @@ const CORS_PROXIES = [
       setError('Could not find a valid stream URL in the input.');
       return;
     }
+    saveCandidate.current = { url: parsed.url, drm: parsed.drm || null };
     parsed.url = applyProxy(parsed.url);
     setLoading(true);
     setSource(parsed);
@@ -212,6 +215,41 @@ const CORS_PROXIES = [
                 const ta = e.currentTarget.parentElement.querySelector('.url-input');
                 if (ta && ta.value.trim()) handleLoad(ta.value);
               }}>Load Stream</button>
+            </div>
+          </div>
+        )}
+
+        {source && !activeChannel && !loading && user && (
+          <button className="btn-save-channel" onClick={() => setSaveDialog(true)}>
+            + Save to Channels
+          </button>
+        )}
+
+        {saveDialog && (
+          <div className="modal-overlay open" onClick={() => setSaveDialog(false)}>
+            <div className="modal" style={{width:400}} onClick={e => e.stopPropagation()}>
+              <h2>Save as Channel</h2>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                const name = e.target.channelName.value.trim();
+                if (!name) return;
+                try {
+                  const data = { name, url: saveCandidate.current?.url || source.url };
+                  if (saveCandidate.current?.drm) {
+                    data.keyId = saveCandidate.current.drm.keyId;
+                    data.key = saveCandidate.current.drm.key;
+                  }
+                  await addChannel(data);
+                  const list = await reindexChannels();
+                  setChannels(list);
+                  setSaveDialog(false);
+                } catch (err) {
+                  alert(err.message);
+                }
+              }}>
+                <input name="channelName" className="form-input" placeholder="Channel name" required autoFocus />
+                <button type="submit" className="btn-submit" style={{marginTop:8, width:'100%'}}>Save</button>
+              </form>
             </div>
           </div>
         )}
