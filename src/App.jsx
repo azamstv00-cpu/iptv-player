@@ -118,21 +118,34 @@ const CORS_PROXIES = [
     const statusText = httpStatus ? String(httpStatus) : '';
     const pair = (status, label, hint) => ({ label, hint });
     const known = {
-      '403': pair('Forbidden', 'The server is blocking this request — try a different proxy or use no proxy.'),
-      '404': pair('Not found', 'The stream URL does not exist — check if the link is correct.'),
       '400': pair('Bad request', 'The server rejected the request — the URL may be malformed.'),
       '401': pair('Unauthorized', 'Authentication required — the stream needs valid credentials.'),
+      '403': pair('Forbidden', 'The server is blocking this request — try a different proxy or use no proxy.'),
+      '404': pair('Not found', 'The stream URL does not exist — check if the link is correct.'),
+      '410': pair('Gone', 'The stream URL has been removed and is no longer available.'),
+      '429': pair('Rate limited', 'Too many requests — wait a moment and try again.'),
+      '500': pair('Server error', 'The streaming server encountered an internal error.'),
       '502': pair('Bad gateway', 'The upstream server is down or unreachable.'),
       '503': pair('Unavailable', 'The server is temporarily overloaded or down.'),
+      '504': pair('Gateway timeout', 'The upstream server did not respond in time.'),
     };
     const errMap = {
       1002: pair('DNS failure', 'The domain could not be resolved — check the URL for typos.'),
-      6005: pair('Decrypt error', 'The DRM key is wrong or the stream is not decryptable.'),
-      6006: pair('No license', 'ClearKey DRM keys are missing — provide keyId and key.'),
+      1003: pair('Not supported', 'The requested operation is not supported by the browser.'),
+      2001: pair('Bad manifest', 'The play manifest (MPD/M3U8) is corrupted or invalid.'),
+      2002: pair('Restricted', 'The server denied access to the play manifest.'),
       3003: pair('Bad format', 'The stream format is not recognized or unsupported.'),
       3004: pair('Bad codec', 'Your browser cannot decode the video codec used.'),
+      3005: pair('No encryption key', 'The stream is encrypted but the key data is missing.'),
+      4001: pair('Restricted content', 'The content is restricted in your region or device.'),
+      4002: pair('Not supported', 'Your browser or device does not support this stream.'),
       4007: pair('Empty stream', 'No playable video/audio tracks were found in the manifest.'),
       5000: pair('DRM error', 'Digital rights management rejected playback.'),
+      5001: pair('DRM unsupported', 'The DRM scheme used by this stream is not supported.'),
+      5002: pair('DRM init missing', 'The stream has DRM but initialization data is absent.'),
+      5004: pair('License denied', 'The DRM license server refused to issue a license.'),
+      6005: pair('Decrypt error', 'The DRM key is wrong or the stream is not decryptable.'),
+      6006: pair('No keys', 'ClearKey DRM keys are missing — provide keyId and key.'),
     };
     const match = known[statusText] || errMap[err.code] || pair(`Error ${err.code}`, '');
     const line = statusText ? `${cat} ${err.code} · ${statusText} ${match.label}` : `${cat} ${err.code} · ${match.label}`;
