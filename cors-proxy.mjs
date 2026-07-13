@@ -15,7 +15,13 @@ http.createServer((req, res) => {
   const url = new URL(target);
   const mod = url.protocol === 'https:' ? https : http;
 
-  const proxyReq = mod.request(target, { method: req.method, headers: { ...req.headers, host: url.hostname } }, (proxyRes) => {
+  const blockedHeaders = ['origin', 'referer', 'host', 'sec-fetch-site', 'sec-fetch-mode', 'sec-fetch-dest', 'sec-ch-ua', 'sec-ch-ua-mobile', 'sec-ch-ua-platform'];
+  const cleanHeaders = Object.fromEntries(
+    Object.entries(req.headers).filter(([k]) => !blockedHeaders.includes(k.toLowerCase()))
+  );
+  cleanHeaders['user-agent'] = 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Mobile Safari/537.36';
+
+  const proxyReq = mod.request(target, { method: req.method, headers: { ...cleanHeaders, host: url.hostname } }, (proxyRes) => {
     res.writeHead(proxyRes.statusCode, {
       'Access-Control-Allow-Origin': '*',
       ...Object.fromEntries(
@@ -25,6 +31,6 @@ http.createServer((req, res) => {
     proxyRes.pipe(res);
   });
 
-  proxyReq.on('error', () => { res.writeHead(502); res.end('Proxy error'); });
+  proxyReq.on('error', (e) => { console.error('Proxy error:', e.message); res.writeHead(502); res.end('Proxy error: ' + e.message); });
   req.pipe(proxyReq);
 }).listen(PORT, () => console.log(`CORS proxy running on http://localhost:${PORT}`));
