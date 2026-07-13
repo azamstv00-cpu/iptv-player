@@ -66,9 +66,9 @@ export function useShakaPlayer(videoRef) {
         },
         abr: {
           enabled: true,
-          switchInterval: 3,
-          bandwidthUpgradeTarget: 0.7,
-          bandwidthDowngradeTarget: 0.9,
+          switchInterval: 2,
+          bandwidthUpgradeTarget: 0.5,
+          bandwidthDowngradeTarget: 0.8,
           defaultBandwidthEstimate: 8000000,
         },
         manifest: {
@@ -170,7 +170,14 @@ export function useShakaPlayer(videoRef) {
     if (!player) return;
 
     if (track === 'auto') {
-      player.configure('abr.enabled', true);
+      player.configure({
+        abr: {
+          enabled: true,
+          switchInterval: 2,
+          bandwidthUpgradeTarget: 0.5,
+          bandwidthDowngradeTarget: 0.8,
+        },
+      });
       setActiveTrack(null);
     } else {
       player.configure('abr.enabled', false);
