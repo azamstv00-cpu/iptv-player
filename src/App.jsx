@@ -112,21 +112,27 @@ const CORS_PROXIES = [
   }, [applyProxy]);
 
   const handleError = useCallback((err) => {
-    const msg = formatShakaError(err);
-    const isCors = msg.includes('FETCH') || msg.includes('HTTP 0') || msg.includes('Failed to fetch') || msg.includes('1002');
-    const isProxyBlock = msg.includes('403') && (msg.includes('proxied') || msg.includes('blocked') || msg.includes('forbidden'));
-    const isProxyFail = useCorsProxy && corsProxyUrl && CORS_PROXIES.some(p => p.url && msg.includes(p.url.replace(/\/+$/, '')));
-    if (isProxyBlock) {
-      setError(`${msg}\n\nThe proxy service blocked this domain.\nTry selecting a different proxy from the dropdown or install a CORS browser extension.`);
-    } else if (isProxyFail) {
-      setError(`${msg}\n\nThe proxy server itself could not be reached (it may be down or blocked).\nFree options:\n1. Install "CORS Unblock" from Chrome Web Store - no proxy needed\n2. Run \`npx cors-anywhere --port 8080\` locally, use http://localhost:8080/ as proxy`);
-    } else if (isCors) {
-      setError(`${msg}\n\nThe server blocks browser requests.\nFree options:\n1. Install "CORS Unblock" from Chrome Web Store - no proxy needed\n2. Run \`npx cors-anywhere --port 8080\` locally, use http://localhost:8080/ as proxy\n3. Or try one of the proxies in the dropdown below`);
-    } else {
-      setError(msg);
-    }
+    const CATEGORIES = { 1: 'Network', 2: 'Manifest', 3: 'Media', 4: 'Streaming', 5: 'DRM', 6: 'Player' };
+    const cat = CATEGORIES[err.category] || 'Unknown';
+    const httpStatus = (err.data || []).find(d => String(d).match(/^\d{3}$/));
+    const statusText = httpStatus ? String(httpStatus) : '';
+    const reason = statusText === '403' ? 'Forbidden'
+      : statusText === '404' ? 'Stream not found'
+      : statusText === '400' ? 'Bad request'
+      : statusText === '401' ? 'Unauthorized'
+      : statusText === '502' ? 'Bad gateway'
+      : statusText === '503' ? 'Service unavailable'
+      : err.code === 1002 ? 'DNS lookup failed'
+      : err.code === 6005 ? 'Encryption error'
+      : err.code === 6006 ? 'Missing license'
+      : err.code === 3003 ? 'Unsupported format'
+      : err.code === 3004 ? 'Unsupported codec'
+      : err.code === 4007 ? 'No streams found'
+      : err.code === 5000 ? 'DRM error'
+      : `Error ${err.code}`;
+    setError(statusText ? `${cat} ${err.code} · ${statusText} ${reason}` : `${cat} ${err.code} · ${reason}`);
     setLoading(false);
-  }, [useCorsProxy, corsProxyUrl]);
+  }, []);
 
   const handleLoadSuccess = useCallback(() => {
     const isLarge = window.innerWidth > 1024;
