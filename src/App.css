@@ -699,24 +699,6 @@
 .btn-nav svg, .btn-fullscreen svg { width: 18px; height: 18px; }
 .btn-fullscreen svg { fill: currentColor; }
 
-/* ===== Toast message ===== */
-.toast-msg {
-  position: absolute;
-  z-index: 10;
-  top: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--glass-elevated);
-  backdrop-filter: blur(var(--glass-elevated-blur));
-  border: 1px solid rgba(91, 124, 250, 0.3);
-  color: var(--text-muted);
-  padding: 8px 18px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
 /* ===== Menu button (mobile) ===== */
 .menu-btn {
   position: absolute;

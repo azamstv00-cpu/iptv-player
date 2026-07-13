@@ -232,9 +232,10 @@ const CORS_PROXIES = [
           onError={handleError}
           onLoadSuccess={handleLoadSuccess}
           onLoadingChange={setLoading}
-          channelName={currentChannel?.name}
-          channelCategory={currentChannel?.category}
-          nowPlaying={currentChannel?.name}
+          channelName={activeChannel?.name || matchedChannelName || currentChannel?.name}
+          channelCategory={activeChannel?.category || currentChannel?.category}
+          nowPlaying={activeChannel?.name || matchedChannelName || currentChannel?.name}
+          matchedChannelName={matchedChannelName}
           channels={channels}
           activeChannel={activeChannel}
           onSelectChannel={handleSelectChannel}
@@ -283,10 +284,7 @@ const CORS_PROXIES = [
             + Save to Channels
           </button>
         )}
-        {source && !activeChannel && !loading && saveBtnHidden && user && (
-          <div className="toast-msg">Already added: {matchedChannelName}</div>
-        )}
-
+        
         {saveDialog && (
           <div className="modal-overlay open" onClick={() => setSaveDialog(false)}>
             <div className="modal" style={{width:400}} onClick={e => e.stopPropagation()}>

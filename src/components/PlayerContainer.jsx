@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { useShakaPlayer } from '../hooks/useShakaPlayer';
 import PlayerControls from './PlayerControls';
 
-export default function PlayerContainer({ source, onError, onLoadSuccess, onLoadingChange, channelName, channelCategory, nowPlaying, channels, activeChannel, onSelectChannel }) {
+export default function PlayerContainer({ source, onError, onLoadSuccess, onLoadingChange, channelName, channelCategory, nowPlaying, matchedChannelName, channels, activeChannel, onSelectChannel }) {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const loadedSource = useRef(null);
@@ -32,8 +32,6 @@ export default function PlayerContainer({ source, onError, onLoadSuccess, onLoad
     });
   }, [source]);
 
-  const showVideoInfo = source && channelName;
-
   return (
     <div ref={containerRef} className={controlsHidden ? 'cursor-hidden' : ''} style={{ width: '100%', height: '100%', position: 'relative' }}>
       <video
@@ -43,11 +41,15 @@ export default function PlayerContainer({ source, onError, onLoadSuccess, onLoad
         playsInline
       />
 
-      {showVideoInfo && (
+      {(source && (channelName || matchedChannelName)) && (
         <div className={`video-info ${controlsHidden ? 'hidden' : ''}`}>
           <div className="label"><span className="live-dot"></span> LIVE</div>
-          <h1>{nowPlaying || channelName}</h1>
-          <div className="meta">{channelCategory ? `${channelCategory}` : ''}{activeTrack && activeTrack.width ? ` · ${activeTrack.width}x${activeTrack.height}` : ''}</div>
+          <h1>{nowPlaying || channelName || matchedChannelName}</h1>
+          <div className="meta">
+            {channelCategory ? `${channelCategory}` : ''}
+            {matchedChannelName && !activeChannel && !channelName ? 'Already added' : ''}
+            {activeTrack && activeTrack.width ? ` · ${activeTrack.width}x${activeTrack.height}` : ''}
+          </div>
         </div>
       )}
 
