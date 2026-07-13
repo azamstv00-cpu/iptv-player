@@ -666,11 +666,11 @@
 /* ===== Navigation arrows ===== */
 .nav-arrows {
   position: absolute;
-  bottom: 80px;
-  right: 24px;
+  bottom: 24px;
+  right: 12px;
   z-index: 5;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 6px;
 }
 .btn-nav {
@@ -816,9 +816,9 @@
     top: 60px;
     min-width: 150px;
   }
-  .nav-arrows { bottom: 68px; right: 16px; }
-  .btn-nav { width: 38px; height: 38px; }
-  .btn-nav svg { width: 16px; height: 16px; }
+  .nav-arrows { bottom: 24px; right: 8px; gap: 4px; }
+  .btn-nav { width: 32px; height: 32px; }
+  .btn-nav svg { width: 14px; height: 14px; }
   .btn-fullscreen {
     width: 38px;
     height: 38px;
