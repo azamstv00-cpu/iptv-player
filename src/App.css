@@ -143,6 +143,30 @@
   text-overflow: ellipsis;
 }
 .channel-item.active .channel-name { color: var(--accent); }
+.channel-actions {
+  display: flex;
+  gap: 2px;
+  margin-right: 4px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.channel-item:hover .channel-actions { opacity: 1; }
+.ch-action-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+.ch-action-btn:hover { background: rgba(255,255,255,0.08); }
+.ch-action-btn.edit:hover { color: var(--accent); }
+.ch-action-btn.delete:hover { color: #e55; }
 .channel-now-playing {
   font-size: 11px;
   color: var(--text-muted);

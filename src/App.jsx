@@ -5,7 +5,7 @@ import PlayerContainer from './components/PlayerContainer';
 import LoginModal from './components/LoginModal';
 import AdminPanel from './components/AdminPanel';
 import { parseInput } from './services/linkParser';
-import { addChannel, reindexChannels } from './services/channels';
+import { addChannel, deleteChannel, reindexChannels } from './services/channels';
 import { onAuth, logout } from './services/auth';
 
 const CORS_PROXIES = [
@@ -36,6 +36,7 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [clock, setClock] = useState('');
   const [saveDialog, setSaveDialog] = useState(false);
+  const [editChannel, setEditChannel] = useState(null);
   const saveCandidate = useRef(null);
 const AgentationLazy = import.meta.env.MODE === 'development'
   ? lazy(() => import('agentation').then(m => ({ default: m.Agentation })))
@@ -133,8 +134,26 @@ const CORS_PROXIES = [
     }
   }, []);
 
+  const handleEditChannel = (ch) => {
+    setEditChannel(ch);
+    setShowAdmin(true);
+  };
+
+  const handleDeleteChannel = async (ch) => {
+    if (!confirm(`Delete "${ch.name}"?`)) return;
+    try {
+      await deleteChannel(ch.id);
+      if (activeChannel?.id === ch.id) { setActiveChannel(null); setSource(null); }
+      const list = await reindexChannels();
+      setChannels(list);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   const handleAdminClose = async () => {
     setShowAdmin(false);
+    setEditChannel(null);
     const list = await reindexChannels();
     setChannels(list);
   };
@@ -144,7 +163,7 @@ const CORS_PROXIES = [
   return (
     <div className="app" ref={appRef}>
       {showLogin && <LoginModal onClose={() => setShowLogin(false)} onLogin={() => {}} />}
-      {showAdmin && <AdminPanel onClose={handleAdminClose} />}
+      {showAdmin && <AdminPanel key={editChannel?.id || 'new'} initialChannel={editChannel} onClose={handleAdminClose} />}
 
       <main className="player">
         <button className="menu-btn" onClick={() => setMenuOpen(v => !v)} aria-label="Toggle channel list">
@@ -277,6 +296,9 @@ const CORS_PROXIES = [
           channels={channels}
           activeChannel={activeChannel}
           onSelect={handleSelectChannel}
+          user={user}
+          onEdit={handleEditChannel}
+          onDelete={handleDeleteChannel}
         />
         {user && (
           <button className="btn-add-channel" onClick={() => setShowAdmin(true)}>

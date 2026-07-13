@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { addChannel, updateChannel, deleteChannel, reindexChannels } from '../services/channels';
 import { parseInput } from '../services/linkParser';
 
-export default function AdminPanel({ onClose }) {
+export default function AdminPanel({ onClose, initialChannel }) {
   const [channels, setChannels] = useState([]);
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
@@ -27,6 +27,16 @@ export default function AdminPanel({ onClose }) {
   };
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    if (initialChannel) {
+      setName(initialChannel.name || '');
+      setUrl(initialChannel.url || '');
+      drmRef.current = initialChannel.keyId && initialChannel.key ? { keyId: initialChannel.keyId, key: initialChannel.key } : {};
+      setDrmDetected(!!drmRef.current.keyId);
+      setEditing(initialChannel.id);
+    }
+  }, [initialChannel]);
 
   const handleUrlChange = (raw) => {
     setUrl(raw);
