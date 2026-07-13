@@ -72,7 +72,7 @@ export default function AdminPanel({ onClose }) {
   const handleEdit = (ch) => {
     setName(ch.name || '');
     setUrl(ch.url || '');
-    drmRef.current = ch.drmKeyId && ch.drmKey ? { keyId: ch.drmKeyId, key: ch.drmKey } : {};
+    drmRef.current = ch.keyId && ch.key ? { keyId: ch.keyId, key: ch.key } : {};
     setDrmDetected(!!drmRef.current.keyId);
     setEditing(ch.id);
   };

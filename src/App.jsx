@@ -87,7 +87,7 @@ const CORS_PROXIES = [
   const handleSelectChannel = useCallback((ch) => {
     setError(null);
     setActiveChannel(ch);
-    const drm = ch.drmKeyId && ch.drmKey ? { keyId: ch.drmKeyId, key: ch.drmKey } : null;
+    const drm = ch.keyId && ch.key ? { keyId: ch.keyId, key: ch.key } : null;
     const format = ch.url.includes('.mpd') ? 'DASH' : 'HLS';
     setSource({ url: applyProxy(ch.url), drm, format });
     setMenuOpen(false);

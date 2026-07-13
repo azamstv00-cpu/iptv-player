@@ -36,11 +36,6 @@ export function parseInput(text) {
         key = parts[1].trim();
       }
     }
-    const base = url.slice(0, qIndex);
-    const cleanParams = new URLSearchParams(url.slice(qIndex));
-    cleanParams.delete('drmLicense');
-    const cleanQs = cleanParams.toString();
-    url = cleanQs ? `${base}?${cleanQs}` : base;
   }
 
   const drm = keyId && key ? { keyId, key } : null;
