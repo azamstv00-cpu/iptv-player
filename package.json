@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -n proxy,vite \"node cors-proxy.mjs\" \"vite\"",
     "home": "concurrently -n proxy,vite \"node cors-proxy.mjs\" \"vite --mode home\"",
     "cors-proxy": "node cors-proxy.mjs",
     "build": "vite build",

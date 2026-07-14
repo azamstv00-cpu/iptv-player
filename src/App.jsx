@@ -52,10 +52,8 @@ const CORS_PROXIES = [
     { label: 'Local proxy (npm run cors-proxy)', url: `http://${LOCAL_IP}:8080/` },
     { label: 'Custom', url: '' },
   ];
-  const defaultProxy = import.meta.env.MODE === 'home'
-    ? `http://${LOCAL_IP}:8080/`
-    : 'https://thingproxy.freeboard.io/fetch/';
-  const [useCorsProxy, setUseCorsProxy] = useState(import.meta.env.MODE === 'home');
+  const defaultProxy = `http://${LOCAL_IP}:8080/`;
+  const [useCorsProxy, setUseCorsProxy] = useState(true);
   const [corsProxyUrl, setCorsProxyUrl] = useState(defaultProxy);
   const appRef = useRef(null);
 
@@ -107,7 +105,8 @@ const CORS_PROXIES = [
     const drm = ch.keyId && ch.key ? { keyId: ch.keyId, key: ch.key } : null;
     const cleanUrl = ch.url.split('|')[0];
     const format = cleanUrl.includes('.mpd') ? 'DASH' : 'HLS';
-    setSource({ url: ch.useProxy !== false ? proxyUrl(cleanUrl) : cleanUrl, drm, format });
+    const isDev = import.meta.env.MODE === 'development';
+    setSource({ url: isDev || ch.useProxy !== false ? proxyUrl(cleanUrl) : cleanUrl, drm, format });
     setMenuOpen(false);
   }, [proxyUrl]);
 
