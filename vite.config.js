@@ -4,9 +4,9 @@ import react from '@vitejs/plugin-react'
 import basicSsl from '@vitejs/plugin-basic-ssl'
 
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), ...(mode !== 'development' ? [basicSsl()] : [])],
+  plugins: [react(), basicSsl()],
   server: {
-    https: mode !== 'development',
+    https: true,
     host: true,
     port: mode === 'development' ? 3000 : 5173,
   },
