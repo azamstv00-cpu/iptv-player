@@ -183,6 +183,9 @@
 }
 .channel-status.online { background: var(--success); }
 .channel-status.offline { background: var(--error); }
+.channel-expiry { opacity: 0.7; }
+.channel-expiry.expired { color: #e55; opacity: 1; }
+.channel-expiry.near { color: #fc3; opacity: 1; }
 
 .btn-save-channel {
   position: absolute;

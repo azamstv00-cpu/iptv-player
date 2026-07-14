@@ -4,7 +4,7 @@ import ChannelList from './components/ChannelList';
 import PlayerContainer from './components/PlayerContainer';
 import LoginModal from './components/LoginModal';
 import AdminPanel from './components/AdminPanel';
-import { parseInput } from './services/linkParser';
+import { parseInput, parseTokenExpiry } from './services/linkParser';
 import { addChannel, deleteChannel, reindexChannels } from './services/channels';
 import { onAuth, logout } from './services/auth';
 
@@ -59,9 +59,16 @@ const CORS_PROXIES = [
   const [corsProxyUrl, setCorsProxyUrl] = useState(defaultProxy);
   const appRef = useRef(null);
 
-  useEffect(() => {
-    reindexChannels().then(setChannels).catch(console.error);
+  const enrichChannels = useCallback((list) => {
+    return list.map(ch => ({ ...ch, tokenExpiry: parseTokenExpiry(ch.url) }));
   }, []);
+
+  const loadChannels = useCallback(async () => {
+    const list = await reindexChannels();
+    setChannels(enrichChannels(list));
+  }, [enrichChannels]);
+
+  useEffect(() => { loadChannels().catch(console.error); }, [loadChannels]);
 
   useEffect(() => {
     const unsub = onAuth(u => {
@@ -190,7 +197,7 @@ const CORS_PROXIES = [
       await deleteChannel(ch.id);
       if (activeChannel?.id === ch.id) { setActiveChannel(null); setSource(null); }
       const list = await reindexChannels();
-      setChannels(list);
+      setChannels(enrichChannels(list));
     } catch (err) {
       setError(err.message);
     }
@@ -200,7 +207,7 @@ const CORS_PROXIES = [
     setShowAdmin(false);
     setEditChannel(null);
     const list = await reindexChannels();
-    setChannels(list);
+    setChannels(enrichChannels(list));
   };
 
   const currentChannel = activeChannel || (channels.length > 0 ? channels[0] : null);
@@ -306,7 +313,7 @@ const CORS_PROXIES = [
                   }
                   await addChannel(data);
                   const list = await reindexChannels();
-                  setChannels(list);
+                  setChannels(enrichChannels(list));
                   setSaveDialog(false);
                 } catch (err) {
                   alert(err.message);

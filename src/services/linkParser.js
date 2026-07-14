@@ -183,3 +183,21 @@ export function parseInput(text) {
 
   return { url, drm, format };
 }
+
+export function parseTokenExpiry(url) {
+  if (!url) return null;
+  const q = url.indexOf('?');
+  if (q === -1) return null;
+  const params = new URLSearchParams(url.slice(q));
+  const token = params.get('token');
+  if (!token) return null;
+  try {
+    const decoded = atob(token);
+    const parts = decoded.split(':');
+    if (parts.length >= 2) {
+      const ts = parseInt(parts[1], 10);
+      if (!isNaN(ts)) return ts;
+    }
+  } catch (_) {}
+  return null;
+}
