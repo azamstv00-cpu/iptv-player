@@ -20,11 +20,14 @@ http.createServer((req, res) => {
     Object.entries(req.headers).filter(([k]) => !blockedHeaders.includes(k.toLowerCase()))
   );
   cleanHeaders['user-agent'] = 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Mobile Safari/537.36';
-  cleanHeaders['origin'] = 'https://dude.mvp.bd';
-  cleanHeaders['referer'] = 'https://dude.mvp.bd/';
+  cleanHeaders['origin'] = `${url.protocol}//${url.hostname}`;
+  cleanHeaders['referer'] = `${url.protocol}//${url.hostname}/`;
 
-  req.setTimeout(30000);
+  let responded = false;
+
+  req.setTimeout(30000, () => { console.error('Request timeout'); req.destroy(); });
   const proxyReq = mod.request(target, { method: req.method, headers: { ...cleanHeaders, host: url.hostname }, timeout: 15000 }, (proxyRes) => {
+    responded = true;
     res.writeHead(proxyRes.statusCode, {
       'Access-Control-Allow-Origin': '*',
       ...Object.fromEntries(
@@ -35,8 +38,8 @@ http.createServer((req, res) => {
     proxyRes.pipe(res);
   });
 
-  proxyReq.on('error', (e) => { console.error('Proxy error:', e.message); if (!res.writableEnded) { res.writeHead(502); res.end('Proxy error'); } });
-  proxyReq.on('timeout', () => { console.error('Proxy timeout'); proxyReq.destroy(); if (!res.writableEnded) { res.writeHead(504); res.end('Proxy timeout'); } });
+  proxyReq.on('error', (e) => { console.error('Proxy error:', e.message); if (!responded) { responded = true; res.writeHead(502); res.end('Proxy error'); } });
+  proxyReq.on('timeout', () => { console.error('Proxy timeout'); proxyReq.destroy(); if (!responded) { responded = true; res.writeHead(504); res.end('Proxy timeout'); } });
   req.on('error', (e) => { console.error('Req error:', e.message); proxyReq.destroy(); });
   req.pipe(proxyReq);
 }).listen(PORT, () => console.log(`CORS proxy running on http://localhost:${PORT}`));
