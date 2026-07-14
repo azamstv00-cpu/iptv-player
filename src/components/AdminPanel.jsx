@@ -113,14 +113,38 @@ export default function AdminPanel({ onClose, initialChannel }) {
 
   const sorted = [...channels].sort((a, b) => (a.channelNumber || 0) - (b.channelNumber || 0));
 
+  const handleDownloadChannels = () => {
+    const exportData = sorted.map(ch => ({
+      name: ch.name || '',
+      url: ch.url || '',
+      channelNumber: ch.channelNumber || 0,
+      useProxy: ch.useProxy !== false,
+      drm: ch.keyId && ch.key ? { keyId: ch.keyId, key: ch.key } : null,
+    }));
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'channels.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className={`modal-overlay ${open ? 'open' : ''}`} onClick={handleClose}>
       <div className="modal" style={{width:640, maxHeight:'85vh', display:'flex', flexDirection:'column'}} onClick={e => e.stopPropagation()}>
         <button className="modal-close" onClick={handleClose} aria-label="Close">
           <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
         </button>
-        <h2>Channel Admin</h2>
-        <p>Add, edit or remove channels.</p>
+        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+          <div>
+            <h2>Channel Admin</h2>
+            <p>Add, edit or remove channels.</p>
+          </div>
+          <button className="btn-glass" onClick={handleDownloadChannels} style={{flexShrink:0, fontSize:13, padding:'6px 12px'}}>
+            Download JSON
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit} style={{marginBottom:16, flexShrink:0}}>
           <div className="form-group">

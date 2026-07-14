@@ -1,5 +1,18 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 
+function toBase64Key(value) {
+  if (!value) return value;
+  // Shaka's clearKeys accepts hex OR 22-char base64url. Normalize 32-char hex
+  // to base64url (no padding) so Shaka passes it through without re-parsing.
+  if (/^[0-9a-fA-F]{32}$/.test(value)) {
+    const bytes = new Uint8Array(16);
+    for (let i = 0; i < 16; i++) bytes[i] = parseInt(value.substr(i * 2, 2), 16);
+    const b64 = btoa(String.fromCharCode.apply(null, bytes));
+    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  return value;
+}
+
 export function useShakaPlayer(videoRef) {
   const playerRef = useRef(null);
   const readyRef = useRef(null);
@@ -148,7 +161,7 @@ export function useShakaPlayer(videoRef) {
         player.configure({
           drm: {
             clearKeys: {
-              [source.drm.keyId]: source.drm.key
+              [toBase64Key(source.drm.keyId)]: toBase64Key(source.drm.key)
             }
           }
         });

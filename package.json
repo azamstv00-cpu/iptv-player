@@ -7,6 +7,7 @@
     "dev": "concurrently -n proxy,vite \"node cors-proxy.mjs\" \"vite\"",
     "home": "concurrently -n proxy,vite \"node cors-proxy.mjs\" \"vite --mode home\"",
     "cors-proxy": "node cors-proxy.mjs",
+    "tv": "cd ..\\tv && npm run dev",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview"

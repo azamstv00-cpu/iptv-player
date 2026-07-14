@@ -90,28 +90,22 @@ export function parseInput(text) {
   // Not JSON or incomplete — fall back to line-by-line parsing
   const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
 
+  // 1. KODIPROP license_key lines carry an explicit kid:key pair
   for (const line of lines) {
     if (line.startsWith('#KODIPROP:inputstream.adaptive.license_key=')) {
       const rawKey = line.split('=').slice(1).join('=').trim();
       const parts = rawKey.split(':').filter(Boolean);
       if (parts.length === 2) {
-        keyId = keyId || parts[0].trim();
-        key = key || parts[1].trim();
+        keyId = parts[0].trim();
+        key = parts[1].trim();
       }
     }
   }
 
+  // 2. Locate the stream URL (first http(s) line, or any URL-ish token)
   for (const line of lines) {
     if ((line.startsWith('http://') || line.startsWith('https://')) && !url) {
       url = line;
-    }
-  }
-
-  for (const line of lines) {
-    const extracted = extractKeys(line);
-    if (extracted) {
-      if (!keyId) keyId = extracted.keyId;
-      if (!key) key = extracted.key;
     }
   }
 
@@ -131,33 +125,51 @@ export function parseInput(text) {
 
   if (!url) return null;
 
+  // 3. Extract keys from the pipe suffix (...|drmLicense=KID:KEY&...) — authoritative
   const pipeIndex = url.indexOf('|');
+  let suffix = '';
   if (pipeIndex !== -1) {
-    const suffix = url.slice(pipeIndex + 1);
-    const pipeParams = new URLSearchParams(suffix.replace(/&/g, '&'));
-    const licenseKey = pipeParams.get('drmLicense');
-    if (licenseKey) {
-      const parts = licenseKey.split(':').filter(Boolean);
-      if (parts.length === 2) {
-        keyId = keyId || parts[0].trim();
-        key = key || parts[1].trim();
-      }
-    }
-    const pipeKeys = extractKeys(suffix);
-    if (pipeKeys) { keyId = keyId || pipeKeys.keyId; key = key || pipeKeys.key; }
+    suffix = url.slice(pipeIndex + 1);
     url = url.slice(0, pipeIndex);
   }
 
+  const pipeParams = new URLSearchParams(suffix.replace(/&/g, '&'));
+  const licenseKey = pipeParams.get('drmLicense');
+  if (licenseKey) {
+    const parts = licenseKey.split(':').filter(Boolean);
+    if (parts.length === 2) {
+      keyId = parts[0].trim();
+      key = parts[1].trim();
+    }
+  }
+  // Explicitly-typed keys in the pipe suffix (e.g. kid=..&key=..)
+  const pipeKeys = extractKeys(suffix);
+  if (pipeKeys) {
+    if (!keyId) keyId = pipeKeys.keyId;
+    if (!key) key = pipeKeys.key;
+  }
+
+  // 4. Keys carried in the URL query string (?drmLicense=KID:KEY)
   const qIndex = url.indexOf('?');
   if (qIndex !== -1) {
     const params = new URLSearchParams(url.slice(qIndex));
-    const licenseKey = params.get('drmLicense');
-    if (licenseKey) {
-      const parts = licenseKey.split(':').filter(Boolean);
+    const qLicenseKey = params.get('drmLicense');
+    if (qLicenseKey) {
+      const parts = qLicenseKey.split(':').filter(Boolean);
       if (parts.length === 2) {
-        keyId = keyId || parts[0].trim();
-        key = key || parts[1].trim();
+        if (!keyId) keyId = parts[0].trim();
+        if (!key) key = parts[1].trim();
       }
+    }
+  }
+
+  // Explicitly-typed key pairs on their own non-URL line
+  for (const line of lines) {
+    if (line === url || line.startsWith('http://') || line.startsWith('https://')) continue;
+    const e = extractKeys(line);
+    if (e) {
+      if (!keyId) keyId = e.keyId;
+      if (!key) key = e.key;
     }
   }
 
@@ -166,15 +178,15 @@ export function parseInput(text) {
   else if (/\.m3u8?/i.test(url)) format = 'HLS';
   else if (/\.ts/i.test(url)) format = 'HLS';
 
-  // Fallback: find hex32 pairs in the raw text, skipping URL path segments
+  // 5. Last-resort: bare hex32 pairs in the text, but never reuse hex from the URL itself
   if (!keyId || !key) {
+    const urlHexes = new Set(url.match(/\b([0-9a-fA-F]{32})\b/g) || []);
     const allHex = raw.match(/\b([0-9a-fA-F]{32})\b/g);
     if (allHex && allHex.length >= 2) {
-      const urlHexes = url.match(/\b([0-9a-fA-F]{32})\b/g) || [];
-      const candidates = allHex.filter(h => !urlHexes.includes(h));
+      const candidates = allHex.filter(h => !urlHexes.has(h));
       if (candidates.length >= 2) {
-        keyId = keyId || candidates[0];
-        key = key || candidates[1];
+        if (!keyId) keyId = candidates[0];
+        if (!key) key = candidates[1];
       }
     }
   }

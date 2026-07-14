@@ -138,7 +138,7 @@ const CORS_PROXIES = [
 
   const handleError = useCallback((err) => {
     const CATEGORIES = { 1: 'Network', 2: 'Manifest', 3: 'Media', 4: 'Streaming', 5: 'DRM', 6: 'Player' };
-    const cat = CATEGORIES[err.category] || 'Unknown';
+    const cat = CATEGORIES[err?.category] || 'Player';
     const httpStatus = (err.data || []).find(d => String(d).match(/^\d{3}$/));
     const statusText = httpStatus ? String(httpStatus) : '';
     const pair = (status, label, hint) => ({ label, hint });
@@ -172,9 +172,11 @@ const CORS_PROXIES = [
       6005: pair('Decrypt error', 'The DRM key is wrong or the stream is not decryptable.'),
       6006: pair('No keys', 'ClearKey DRM keys are missing — provide keyId and key.'),
     };
-    const match = known[statusText] || errMap[err.code] || pair(`Error ${err.code}`, '');
-    const line = statusText ? `${cat} ${err.code} · ${statusText} ${match.label}` : `${cat} ${err.code} · ${match.label}`;
-    setError(match.hint ? `${line}\n\n${match.hint}` : line);
+    const errCode = err?.code;
+    const match = known[statusText] || errMap[errCode] || pair(`Error ${errCode ?? ''}`, '');
+    const line = statusText ? `${cat} ${errCode ?? ''} · ${statusText} ${match.label}` : `${cat} ${errCode ?? ''} · ${match.label}`;
+    const extra = err?.message && !errMap[errCode] ? `\n${err.message}` : '';
+    setError(match.hint ? `${line}\n\n${match.hint}` : line + extra);
     setLoading(false);
   }, []);
 
