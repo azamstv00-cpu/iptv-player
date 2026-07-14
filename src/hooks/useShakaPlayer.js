@@ -55,7 +55,6 @@ export function useShakaPlayer(videoRef) {
           bufferBehind: 30,
           segmentPrefetchLimit: 10,
           startAtSegmentBoundary: true,
-          infiniteLiveStreamDuration: true,
           retryParameters: {
             maxAttempts: 2,
             baseDelay: 500,
@@ -72,9 +71,6 @@ export function useShakaPlayer(videoRef) {
           defaultBandwidthEstimate: 8000000,
         },
         manifest: {
-          dash: {
-            defaultPresentationDelay: 8,
-          },
           hls: {
             ignoreManifestProgramDateTime: true,
           },
