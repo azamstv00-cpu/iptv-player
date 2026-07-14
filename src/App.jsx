@@ -81,13 +81,18 @@ const CORS_PROXIES = [
     return () => clearInterval(id);
   }, []);
 
-  const applyProxy = useCallback((urlText) => {
-    if (!useCorsProxy || !corsProxyUrl.trim()) return urlText;
+  const proxyUrl = useCallback((urlText) => {
+    if (!corsProxyUrl.trim()) return urlText;
     const base = corsProxyUrl.trim();
     const encode = base.includes('?');
     const sep = base.endsWith('/') || base.endsWith('?') || base.endsWith('=') ? '' : '/';
     return base + sep + (encode ? encodeURIComponent(urlText) : urlText);
-  }, [useCorsProxy, corsProxyUrl]);
+  }, [corsProxyUrl]);
+
+  const applyProxy = useCallback((urlText) => {
+    if (!useCorsProxy) return urlText;
+    return proxyUrl(urlText);
+  }, [useCorsProxy, proxyUrl]);
 
   const handleSelectChannel = useCallback((ch) => {
     setError(null);
@@ -95,9 +100,9 @@ const CORS_PROXIES = [
     const drm = ch.keyId && ch.key ? { keyId: ch.keyId, key: ch.key } : null;
     const cleanUrl = ch.url.split('|')[0];
     const format = cleanUrl.includes('.mpd') ? 'DASH' : 'HLS';
-    setSource({ url: applyProxy(cleanUrl), drm, format });
+    setSource({ url: ch.useProxy !== false ? proxyUrl(cleanUrl) : cleanUrl, drm, format });
     setMenuOpen(false);
-  }, [applyProxy]);
+  }, [proxyUrl]);
 
   useEffect(() => {
     if (!source || activeChannel) { setSaveBtnHidden(false); setMatchedChannelName(''); return; }

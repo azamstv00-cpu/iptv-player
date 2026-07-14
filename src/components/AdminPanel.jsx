@@ -6,6 +6,7 @@ export default function AdminPanel({ onClose, initialChannel }) {
   const [channels, setChannels] = useState([]);
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
+  const [useProxy, setUseProxy] = useState(true);
   const [editing, setEditing] = useState(null);
   const [error, setError] = useState(null);
   const [drmDetected, setDrmDetected] = useState(false);
@@ -32,6 +33,7 @@ export default function AdminPanel({ onClose, initialChannel }) {
     if (initialChannel) {
       setName(initialChannel.name || '');
       setUrl(initialChannel.url || '');
+      setUseProxy(initialChannel.useProxy !== false);
       drmRef.current = initialChannel.keyId && initialChannel.key ? { keyId: initialChannel.keyId, key: initialChannel.key } : {};
       setDrmDetected(!!drmRef.current.keyId);
       setEditing(initialChannel.id);
@@ -60,6 +62,7 @@ export default function AdminPanel({ onClose, initialChannel }) {
       name,
       url,
       channelNumber: nextNum,
+      useProxy,
       ...drmRef.current,
     };
     try {
@@ -82,6 +85,7 @@ export default function AdminPanel({ onClose, initialChannel }) {
   const handleEdit = (ch) => {
     setName(ch.name || '');
     setUrl(ch.url || '');
+    setUseProxy(ch.useProxy !== false);
     drmRef.current = ch.keyId && ch.key ? { keyId: ch.keyId, key: ch.key } : {};
     setDrmDetected(!!drmRef.current.keyId);
     setEditing(ch.id);
@@ -102,6 +106,7 @@ export default function AdminPanel({ onClose, initialChannel }) {
     setEditing(null);
     setName('');
     setUrl('');
+    setUseProxy(true);
     drmRef.current = {};
     setDrmDetected(false);
   };
@@ -128,6 +133,10 @@ export default function AdminPanel({ onClose, initialChannel }) {
           </div>
           {drmDetected && <span className="drm-detected" style={{marginBottom:12}}>ClearKey DRM detected</span>}
           {error && <p style={{color:'var(--error)', fontSize:13, marginBottom:12}}>{error}</p>}
+          <div className="form-group" style={{flexDirection:'row', alignItems:'center', gap:8}}>
+            <input type="checkbox" id="chProxy" checked={useProxy} onChange={e => setUseProxy(e.target.checked)} />
+            <label htmlFor="chProxy" style={{margin:0, cursor:'pointer'}}>Use CORS proxy</label>
+          </div>
           <div style={{display:'flex', gap:8}}>
             <button type="submit" className="btn-submit">{editing ? 'Update' : 'Add'} Channel</button>
             {editing && <button type="button" className="btn-glass" onClick={handleCancel} style={{flex:1, textAlign:'center'}}>Cancel</button>}

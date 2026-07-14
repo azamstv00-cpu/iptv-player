@@ -15,7 +15,7 @@ http.createServer((req, res) => {
   const url = new URL(target);
   const mod = url.protocol === 'https:' ? https : http;
 
-  const blockedHeaders = ['origin', 'referer', 'host', 'sec-fetch-site', 'sec-fetch-mode', 'sec-fetch-dest', 'sec-ch-ua', 'sec-ch-ua-mobile', 'sec-ch-ua-platform'];
+  const blockedHeaders = ['host'];
   const cleanHeaders = Object.fromEntries(
     Object.entries(req.headers).filter(([k]) => !blockedHeaders.includes(k.toLowerCase()))
   );
@@ -23,16 +23,20 @@ http.createServer((req, res) => {
   cleanHeaders['origin'] = 'https://dude.mvp.bd';
   cleanHeaders['referer'] = 'https://dude.mvp.bd/';
 
-  const proxyReq = mod.request(target, { method: req.method, headers: { ...cleanHeaders, host: url.hostname } }, (proxyRes) => {
+  req.setTimeout(30000);
+  const proxyReq = mod.request(target, { method: req.method, headers: { ...cleanHeaders, host: url.hostname }, timeout: 15000 }, (proxyRes) => {
     res.writeHead(proxyRes.statusCode, {
       'Access-Control-Allow-Origin': '*',
       ...Object.fromEntries(
         Object.entries(proxyRes.headers).filter(([k]) => !/^access-control-allow-origin$/i.test(k))
       ),
     });
+    proxyRes.on('error', (e) => { console.error('Proxy response error:', e.message); res.destroy(); });
     proxyRes.pipe(res);
   });
 
-  proxyReq.on('error', (e) => { console.error('Proxy error:', e.message); res.writeHead(502); res.end('Proxy error'); });
+  proxyReq.on('error', (e) => { console.error('Proxy error:', e.message); if (!res.writableEnded) { res.writeHead(502); res.end('Proxy error'); } });
+  proxyReq.on('timeout', () => { console.error('Proxy timeout'); proxyReq.destroy(); if (!res.writableEnded) { res.writeHead(504); res.end('Proxy timeout'); } });
+  req.on('error', (e) => { console.error('Req error:', e.message); proxyReq.destroy(); });
   req.pipe(proxyReq);
 }).listen(PORT, () => console.log(`CORS proxy running on http://localhost:${PORT}`));
